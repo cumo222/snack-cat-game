@@ -229,6 +229,7 @@ body{font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans S
 @keyframes lovePop{0%{opacity:0;transform:translate(-50%,6px) scale(.5)}25%{opacity:1;transform:translate(-50%,-2px) scale(1.12)}100%{opacity:0;transform:translate(-50%,-16px) scale(.9)}}
 ::-webkit-scrollbar{width:0;height:0}
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head><body>
 <div id="phone" class="phone">
   <!-- ===== 登录页 ===== -->
@@ -255,7 +256,7 @@ body{font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans S
       <p class="slogan">张开大嘴 · 接住所有美味！</p>
       <button id="guestBtn" class="btn btn-primary btn-big">🐾 一键开始游戏</button>
       <button id="acctBtn" class="btn btn-ghost btn-big">👤 账号登录 / 注册</button>
-      <p class="login-tip">无需注册 · 数据云端自动保存</p>
+      <p class="login-tip">无需注册 · 云端同步存档</p>
     </div>
   </div>
 
@@ -305,10 +306,6 @@ body{font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans S
         <div class="stat"><b id="statBest">0</b><span>🏆 历史最高分</span></div>
         <div class="stat"><b id="statTotal">0</b><span>🪙 累计金币</span></div>
         <div class="stat"><b id="statStreak">0</b><span>📅 连续签到</span></div>
-      </div>
-      <div class="cloud-card">
-        <div class="cloud-head">☁️ 云端同步 <span class="cloud-state" id="cloudState">未开启</span></div>
-        <button id="cloudBtn" class="btn btn-blue btn-block" style="margin-top:10px">⚙️ 云端备份设置</button>
       </div>
       <div class="cloud-card">
         <div class="cloud-head">💾 本地存档备份（不依赖网络）</div>
@@ -432,16 +429,6 @@ body{font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans S
   <button id="cfmCancel" class="btn btn-soft btn-mid btn-full" data-close style="margin-top:10px">取 消</button>
 </div></div>
 
-<div id="cloudModal" class="modal dismissible"><div class="panel">
-  <div class="modal-title">☁️ 云端备份</div>
-  <p class="modal-desc" style="margin-top:8px">已默认开通匿名云端自动备份（jsonblob，无需注册），每次存档变更自动同步。若云端显示"不可用"，多为公共云端被网络限制——此时存档仍安全保存在本地。请优先使用「我的 → 导出存档」做文件备份，或在此填入你自有的接口（任意支持 GET/PUT JSON 且允许跨域 CORS 的服务，如自建 API、JSONBin 类存储）覆盖默认云端。</p>
-  <input id="cloudUrl" class="input" type="text" placeholder="自定义云端接口（选填），留空用默认云端"/>
-  <input id="cloudToken" class="input" type="password" style="margin-top:8px" placeholder="Token / Key（可选）"/>
-  <div class="modal-err" id="cloudErr"></div>
-  <button id="cloudSave" class="btn btn-primary btn-mid btn-full">保存并立即上传</button>
-  <button id="cloudPull" class="btn btn-cream btn-mid btn-full" style="margin-top:8px">从云端下载恢复</button>
-  <p class="page-foot" id="cloudHint" style="margin-top:10px"></p>
-</div></div>
 <div id="toast"></div>
 <script>
 //__JS_A__
@@ -460,21 +447,21 @@ const todayStr = () => fmtDate(new Date());
 const yesterdayStr = () => fmtDate(new Date(Date.now() - 864e5));
 const uid = () => 'snk_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 
-/* ================= 数据存储（账号绑定 + 云端自动备份 + 可配置自有接口） =================
-   账号即数据钥匙：每个账号的存档独立保存并自动绑定账号。
-   云端：默认使用 jsonblob.com 匿名云端（无需注册，首次自动建仓、此后每次变更自动同步；
-   公共匿名空间，请勿存放敏感信息）。也可在「我的」→ 云备份 填入自有 JSON 存储接口
-   （GET/PUT JSON、允许 CORS）覆盖默认云端。云端不可达时自动降级为本地保存，不中断游戏。 */
+/* ================= Supabase 配置 ================= */
+const SUPABASE_URL = 'https://gglspvbimmljtummctmg.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_14X6tu0U6QXDip5Hw9-04Q_GKnywJO9';
+let supabase = null;
+if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+}
+let isOnline = !!supabase;
+
+/* ================= 数据存储（本地 + Supabase 云端） ================= */
 const Store = {
   KEY_USERS: 'snackCat_users_v1',
   KEY_SESSION: 'snackCat_session_v1',
-  KEY_CLOUD: 'snackCat_cloud_v1',
-  KEY_CLOUD_CFG: 'snackCat_cloudCfg_v1',
-  CLOUD_POST: 'https://jsonblob.com/api/jsonBlob',
   memUsers: null,
   lsOk: true,
-  _cloudBusy: false,
-  _latest: null,
   loadUsers() {
     if (this.memUsers) return this.memUsers;
     try {
@@ -486,86 +473,10 @@ const Store = {
   saveUsers(u) {
     this.memUsers = u;
     try { localStorage.setItem(this.KEY_USERS, JSON.stringify(u)); } catch (e) { this.lsOk = false; }
-    this.syncCloud(u);
   },
   getSession() { try { return localStorage.getItem(this.KEY_SESSION) || ''; } catch (e) { return ''; } },
-  setSession(id) { try { id ? localStorage.setItem(this.KEY_SESSION, id) : localStorage.removeItem(this.KEY_SESSION); } catch (e) { } },
-  loadCloudCfg() {
-    try {
-      const v = JSON.parse(localStorage.getItem(this.KEY_CLOUD_CFG));
-      if (v && typeof v === 'object') return v;
-    } catch (e) { }
-    return { url: '', token: '', lastSync: 0, status: '' };
-  },
-  saveCloudCfg(cfg) {
-    try { localStorage.setItem(this.KEY_CLOUD_CFG, JSON.stringify(cfg)); } catch (e) { }
-  },
-  syncCloud(users) {
-    const snap = { v: 2, app: 'snackCat', ts: Date.now(), users: users || this.memUsers || {} };
-    try { localStorage.setItem(this.KEY_CLOUD, JSON.stringify(snap)); } catch (e) { }
-    if (typeof fetch !== 'function') return;
-    this._latest = snap;
-    if (this._cloudBusy) return;
-    this._send(snap);
-  },
-  _send(snap) {
-    const cfg = this.loadCloudCfg();
-    this._cloudBusy = true;
-    this._latest = null;
-    const headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
-    if (cfg.token) headers['Authorization'] = 'Bearer ' + cfg.token;
-    const pUrl = cfg.url || this.CLOUD_POST;
-    const method = cfg.url ? 'PUT' : 'POST';
-    const ctrl = (typeof AbortController === 'function') ? new AbortController() : null;
-    const to = ctrl ? setTimeout(() => ctrl.abort(), 9000) : null;
-    const ok = () => {
-      const cur = this.loadCloudCfg();
-      if (!cur.url && cfg.url) cur.url = cfg.url;
-      cur.lastSync = Date.now(); cur.status = 'ok';
-      this.saveCloudCfg(cur);
-      if (typeof renderCloudStatus === 'function') renderCloudStatus();
-    };
-    const fail = () => {
-      const cur = this.loadCloudCfg();
-      cur.status = 'err';
-      this.saveCloudCfg(cur);
-      if (typeof renderCloudStatus === 'function') renderCloudStatus();
-    };
-    fetch(pUrl, { method: method, headers: headers, body: JSON.stringify(snap), signal: ctrl ? ctrl.signal : undefined })
-      .then(r => {
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        if (!cfg.url) {
-          let loc = null;
-          try { loc = r.headers && r.headers.get ? r.headers.get('Location') : null; } catch (e) { }
-          if (!loc) throw new Error('no-location');
-          cfg.url = loc;
-        }
-        ok();
-      })
-      .catch(fail)
-      .finally(() => { if (to) clearTimeout(to); this._cloudBusy = false; const next = this._latest; if (next) this._send(next); });
-  },
-  cloudPull() {
-    const cfg = this.loadCloudCfg();
-    if (typeof fetch !== 'function') return Promise.reject(new Error('cloud-not-configured'));
-    if (!cfg.url) return Promise.reject(new Error('cloud-not-configured'));
-    const headers = {};
-    if (cfg.token) headers['Authorization'] = 'Bearer ' + cfg.token;
-    return fetch(cfg.url, { method: 'GET', headers: headers })
-      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-      .then(snap => {
-        if (!snap || !snap.users || snap.app !== 'snackCat') throw new Error('bad-data');
-        const local = this.loadUsers();
-        Object.assign(local, snap.users);
-        this.memUsers = local;
-        try { localStorage.setItem(this.KEY_USERS, JSON.stringify(local)); } catch (e) { this.lsOk = false; }
-        cfg.lastSync = Date.now(); cfg.status = 'ok';
-        this.saveCloudCfg(cfg);
-        return snap;
-      });
-  }
+  setSession(id) { try { id ? localStorage.setItem(this.KEY_SESSION, id) : localStorage.removeItem(this.KEY_SESSION); } catch (e) { } }
 };
-
 /* ================= 角色定义 ================= */
 const CHARS = [
   { id: 'orange', name: '大橘', price: 0, colors: { main: '#FFB25E', dark: '#E8943A', belly: '#FFEDD0', inner: '#FFD9A8', blush: '#FFB3B3' } },
@@ -648,11 +559,16 @@ const Geo = { w: 0, h: 0, groundY: 0 };
 //__JS_A2__/* ================= 应用状态 ================= */
 const app = { user: null, audio: null, soundOn: true };
 function getUser() { return app.user || null; }
-function saveUser() {
+async function saveUser() {
   if (!app.user || !app.user.id) return;
   const us = Store.loadUsers();
   us[app.user.id] = app.user;
   Store.saveUsers(us);
+  if (isOnline && supabase && app.user.id) {
+    try {
+      await supabase.from('users').upsert([{ id: app.user.id, ...app.user, updated_at: new Date().toISOString() }], { onConflict: 'id' });
+    } catch (e) { console.log('Supabase save failed:', e.message); }
+  }
 }
 
 /* ================= Toast ================= */
@@ -707,8 +623,27 @@ function enterApp(u) {
   renderAll();
   switchTab('home');
 }
-function guestLogin() {
+async function guestLogin() {
   ensureAudio();
+  if (isOnline && supabase) {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email: 'guest_' + Date.now() + '@snackcat.local',
+        password: 'guest_' + Math.random().toString(36).slice(2)
+      });
+      if (error) throw error;
+      const gameData = newUser(data.user.id, '小猫' + randInt(1000, 9999), '');
+      await supabase.from('users').insert([{
+        id: data.user.id, ...gameData, created_at: new Date().toISOString()
+      }]);
+      Store.saveUsers({ [data.user.id]: gameData }); Store.setSession(data.user.id);
+      enterApp(gameData);
+      toast('欢迎新玩家 ' + gameData.nick + '！已送 200 金币 🎉');
+      return;
+    } catch (e) {
+      console.log('Supabase guest login failed:', e.message);
+    }
+  }
   const id = uid();
   const u = newUser(id, '小猫' + randInt(1000, 9999), '');
   const us = Store.loadUsers(); us[id] = u;
@@ -716,13 +651,16 @@ function guestLogin() {
   enterApp(u);
   toast('欢迎新玩家 ' + u.nick + '！已送 200 金币 🎉');
 }
-function logout() {
+async function logout() {
+  if (isOnline && supabase) {
+    try { await supabase.auth.signOut(); } catch (e) {}
+  }
   Store.setSession('');
   app.user = null;
   if (G.running) { G.running = false; cancelAnimationFrame(G.raf); }
   $('#snackLayer').innerHTML = '';
   $('#fxLayer').innerHTML = '';
-  ['pauseModal', 'resultModal', 'itemModal', 'acctModal', 'nickModal', 'passModal', 'confirmModal', 'cloudModal'].forEach(m => hideModal(m));
+  ['pauseModal', 'resultModal', 'itemModal', 'acctModal', 'nickModal', 'passModal', 'confirmModal'].forEach(m => hideModal(m));
   $('#gamePage').classList.remove('show');
   $('#appPage').classList.remove('show');
   $('#loginPage').classList.add('show');
@@ -811,15 +749,15 @@ function renderChars() {
     else if (owned) right = '<div class="char-tag got">已拥有 · 点击使用</div>';
     else right = '<div class="char-price">🪙 ' + c.price + '</div>';
     card.innerHTML = `<div class="char-pic">${catSVG(c.colors)}</div><div class="char-name">${c.name}</div>${right}`;
-    card.addEventListener('click', () => {
+    card.addEventListener('click', async () => {
       if (cur) { toast(c.name + ' 正在出战哦'); return; }
       if (owned) {
-        u.cur = c.id; saveUser(); renderChars(); renderHome();
+        u.cur = c.id; await saveUser(); renderChars(); renderHome();
         sfx('buy');
         toast('已切换出战：' + c.name);
       } else if (u.coins >= c.price) {
         u.coins -= c.price; u.chars.push(c.id); u.cur = c.id;
-        saveUser(); renderChars(); renderHome(); renderMe();
+        await saveUser(); renderChars(); renderHome(); renderMe();
         sfx('buy');
         toast('解锁新角色：' + c.name + '！');
       } else toast('金币不够哦，先去玩几局吧');
@@ -841,11 +779,11 @@ function renderShop() {
     card.innerHTML = `<div class="shop-icon" style="--ic:${it.color}">${itemIcon(k)}</div>
 <div class="shop-info"><div class="shop-name">${it.name}</div><div class="shop-desc">${it.desc}</div></div>
 <div class="shop-right">${have ? '<div class="shop-have">背包 ×' + have + '</div>' : ''}<button class="btn btn-primary btn-sm">🪙 ${it.price}</button></div>`;
-    card.querySelector('button').addEventListener('click', () => {
+    card.querySelector('button').addEventListener('click', async () => {
       if (u.coins >= it.price) {
         u.coins -= it.price;
         u.items[k] = (u.items[k] || 0) + 1;
-        saveUser(); renderShop(); renderHome();
+        await saveUser(); renderShop(); renderHome();
         sfx('buy');
         toast('购入 ' + it.name + ' ×1，已存入背包');
       } else toast('金币不够哦，先去赚点金币吧');
@@ -864,33 +802,8 @@ function renderMe() {
   $('#statTotal').textContent = u.totalEarned;
   $('#statStreak').textContent = u.streak;
   $('#soundBtn').textContent = app.soundOn ? '🔊 音效：开' : '🔇 音效：关';
-  renderCloudStatus();
   renderStoreDiag();
 }
-function cloudStateText(cfg) {
-  if (cfg.status === 'ok' && cfg.lastSync) return '已自动备份（' + fmtDate(new Date(cfg.lastSync)) + '）';
-  if (cfg.status === 'err') return cfg.url ? '自定义接口连接失败，请到设置中检查地址' : '默认匿名云端暂不可达（多为网络限制）· 已存本地';
-  if (cfg.url) return '待同步';
-  return '开通中…';
-}
-function renderCloudStatus() {
-  const el = $('#cloudState'); if (!el) return;
-  const cfg = Store.loadCloudCfg();
-  if (cfg.status === 'ok' && cfg.lastSync) {
-    el.textContent = '☁️ 已云备份 ' + pad(new Date(cfg.lastSync).getHours()) + ':' + pad(new Date(cfg.lastSync).getMinutes());
-    el.style.color = '#3E9A63';
-  } else if (cfg.status === 'err') {
-    el.textContent = '☁️ 云备份暂不可用·已存本地';
-    el.style.color = '#E56A8A';
-  } else if (cfg.url) {
-    el.textContent = '☁️ 云备份待同步';
-    el.style.color = '#5AA9E6';
-  } else {
-    el.textContent = '☁️ 云备份开通中…';
-    el.style.color = '#5AA9E6';
-  }
-}
-/* 存储与云端自诊断：一眼看出数据为什么"没了" */
 function renderStoreDiag() {
   const el = $('#storeDiag'); if (!el) return;
   const us = Store.loadUsers();
@@ -902,13 +815,12 @@ function renderStoreDiag() {
   } else {
     html += '<div class="diag-row bad">⚠️ 浏览器存储不可用——当前打开方式下数据无法保存。请用「本地服务器」或「固定网址」方式打开游戏（见交付说明）。</div>';
   }
-  html += '<div class="diag-row">☁️ 云端：' + cloudStateText(Store.loadCloudCfg()) + '</div>';
   html += '<div class="diag-row">📌 你的账号数据保存在浏览器的存储里，不随文件移动。换设备 / 换浏览器 / 文件更新前，请先「导出存档」，之后「导入恢复」即可找回全部账号。</div>';
   el.innerHTML = html;
 }
 /* 本地存档导出 / 导入（100% 本地兜底，不依赖任何云端） */
 function exportBackupData() {
-  return JSON.stringify({ app: 'snackCat', v: 2, exportedAt: Date.now(), users: Store.loadUsers(), session: Store.getSession(), cloudCfg: Store.loadCloudCfg() }, null, 1);
+  return JSON.stringify({ app: 'snackCat', v: 2, exportedAt: Date.now(), users: Store.loadUsers(), session: Store.getSession() }, null, 1);
 }
 function exportBackup() {
   const text = exportBackupData();
@@ -957,13 +869,7 @@ function importBackup(text) {
     try { localStorage.setItem(Store.KEY_USERS, JSON.stringify(data.users)); } catch (e) { Store.lsOk = false; }
     if (typeof data.session === 'string' && data.session && data.users[data.session]) Store.setSession(data.session);
     else Store.setSession('');
-    const cc = data.cloudCfg && typeof data.cloudCfg === 'object' ? data.cloudCfg : {};
-    if (cc.url && /^https?:\/\//.test(cc.url)) {
-      const cfg = Store.loadCloudCfg();
-      cfg.url = cc.url; cfg.token = cc.token || ''; cfg.status = '';
-      Store.saveCloudCfg(cfg);
-    }
-    Store.syncCloud(Store.loadUsers());
+
     const sid = Store.getSession();
     const u = sid && data.users[sid] ? data.users[sid] : data.users[Object.keys(data.users)[0]];
     ensureAudio();
@@ -986,7 +892,20 @@ function handleBackupFile(evt) {
   evt.target.value = '';
 }
 /* 会话自动恢复：localStorage 中留有会话则直接进入游戏，无需重新登录 */
-function tryAutoLogin() {
+async function tryAutoLogin() {
+  if (isOnline && supabase) {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session && session.user) {
+        const { data: profile } = await supabase.from('users').select('*').eq('id', session.user.id).single();
+        if (profile) {
+          Store.saveUsers({ [profile.id]: profile }); Store.setSession(profile.id);
+          enterApp(profile);
+          return true;
+        }
+      }
+    } catch (e) { console.log('Supabase auto login failed:', e.message); }
+  }
   const sid = Store.getSession();
   if (!sid) return false;
   const us = Store.loadUsers();
@@ -994,19 +913,6 @@ function tryAutoLogin() {
   Store.setSession('');
   return false;
 }
-function openCloud() {
-  const cfg = Store.loadCloudCfg();
-  $('#cloudUrl').value = cfg.url ? cfg.url : '';
-  $('#cloudToken').value = cfg.token || '';
-  $('#cloudErr').textContent = '';
-  $('#cloudHint').textContent = cfg.url
-    ? (cfg.lastSync ? '上次成功云备份：' + fmtDate(new Date(cfg.lastSync)) + '。清空地址可切回默认匿名云端。' : '已接入云端，正在自动同步。')
-    : '已默认开通 jsonblob 匿名云端自动备份，无需注册，每次存档变更自动同步；也可在此填自定义接口（GET/PUT JSON、允许 CORS、支持公网访问）覆盖默认云端。云端为公共匿名空间，勿放敏感信息；若云端不可用，请用「我的 → 导出存档」做文件备份。';
-  showModal('cloudModal');
-}
-
-/* ================= 分享链接（存档编码进 URL，可跨设备恢复） ================= */
-let cfmCb = null;
 function shareEncode(u) {
   const slim = { id: u.id, nick: u.nick, coins: u.coins, best: u.best, totalEarned: u.totalEarned, cur: u.cur || 'orange' };
   if (u.chars) slim.chars = u.chars;
@@ -1037,17 +943,8 @@ function shareDecode(s) {
     return o;
   } catch (e) { return null; }
 }
-function b64url(s) {
-  let b = '';
-  try { b = btoa(String.fromCharCode.apply(null, new TextEncoder().encode(s))); }
-  catch (e) { b = btoa(unescape(encodeURIComponent(s))); }
-  return b.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-}
 function shareLink() {
-  let extra = '';
-  const cfg = Store.loadCloudCfg();
-  if (cfg.url) extra = '&cloud=' + b64url(cfg.url);
-  return location.href.split('#')[0] + '#share=' + shareEncode(getUser()) + extra;
+  return location.href.split('#')[0] + '#share=' + shareEncode(getUser());
 }
 function copyShareLink() {
   const link = shareLink();
@@ -1075,22 +972,6 @@ function tryRestoreShare() {
   if (!m) return;
   const data = shareDecode(m[1]);
   if (!data) return;
-  const cm = location.hash.match(/[?&]cloud=([\w-]+)/);
-  let cloudUrl = '';
-  if (cm) {
-    try {
-      let bb = cm[1].replace(/-/g, '+').replace(/_/g, '/');
-      while (bb.length % 4) bb += '=';
-      let json = '';
-      try {
-        const bytes = Uint8Array.from(atob(bb), c => c.charCodeAt(0));
-        json = new TextDecoder().decode(bytes);
-      } catch (e) {
-        try { json = decodeURIComponent(escape(atob(bb))); } catch (e2) { json = ''; }
-      }
-      if (json && /^https?:\/\//.test(json)) cloudUrl = json;
-    } catch (e) { cloudUrl = ''; }
-  }
   cfmCb = () => {
     const us = Store.loadUsers();
     const old = us[data.id];
@@ -1100,11 +981,10 @@ function tryRestoreShare() {
     us[data.id] = data;
     Store.saveUsers(us);
     Store.setSession(data.id);
-    if (cloudUrl) { const cfg = Store.loadCloudCfg(); cfg.url = cloudUrl; cfg.status = ''; Store.saveCloudCfg(cfg); }
     ensureAudio();
     enterApp(data);
     try { location.hash = ''; } catch (e) { }
-    toast(cloudUrl ? '分享存档已恢复，云端同步已接续：' + data.nick : '分享存档已恢复：' + data.nick);
+    toast('分享存档已恢复：' + data.nick);
   };
   $('#cfmTitle').textContent = '收到分享存档';
   $('#cfmText').textContent = '检测到账号「' + data.nick + '」的分享存档（金币 ' + data.coins + ' · 最高分 ' + data.best + '），是否恢复？';
@@ -1399,7 +1279,7 @@ function quitToHome() {
   renderAll();
   switchTab('home');
 }
-function gameOver() {
+async function gameOver() {
   if (G.over) return;
   G.over = true;
   G.running = false;
@@ -1410,7 +1290,7 @@ function gameOver() {
   u.coins += G.earnedFinal;
   u.totalEarned += G.earnedFinal;
   if (G.score > u.best) u.best = G.score;
-  saveUser();
+  await saveUser();
   sfx('over');
   setTimeout(() => {
     $('#resScore').textContent = G.score;
@@ -1428,16 +1308,35 @@ function gameOver() {
 document.addEventListener('DOMContentLoaded', () => {
   $('#loginCat').innerHTML = catSVG(CHARS[0].colors);
   $$('.nav-item').forEach(n => n.addEventListener('click', () => switchTab(n.dataset.tab)));
-  $('#guestBtn').addEventListener('click', () => { sfx('click'); guestLogin(); });
+  $('#guestBtn').addEventListener('click', async () => { sfx('click'); await guestLogin(); });
   $('#acctBtn').addEventListener('click', () => { sfx('click'); openAcct(); });
   $('#segLogin').addEventListener('click', () => setAcctMode('login'));
   $('#segReg').addEventListener('click', () => setAcctMode('reg'));
-  $('#acctOk').addEventListener('click', () => {
+  $('#acctOk').addEventListener('click', async () => {
     const us = Store.loadUsers();
     const user = $('#acctUser').value.trim();
     const pass = $('#acctPass').value;
     const err = m => { $('#acctErr').textContent = m; };
-    if (acctMode === 'login') {
+          if (isOnline && supabase) {
+        try {
+          const { data, error } = await supabase.auth.signInWithPassword({
+            email: encodeURIComponent(user) + '@snackcat.local',
+            password: pass
+          });
+          if (!error && data.user) {
+            const { data: profile } = await supabase.from('users').select('*').eq('id', data.user.id).single();
+            if (profile) {
+              Store.saveUsers({ [profile.id]: profile }); Store.setSession(profile.id);
+              ensureAudio();
+              enterApp(profile);
+              hideModal('acctModal');
+              toast('欢迎回来 ' + profile.nick + '！存档已同步 🎉');
+              return;
+            }
+          }
+        } catch (e) { console.log('Supabase login failed:', e.message); }
+      }
+if (acctMode === 'login') {
       if (!user) return err('请输入账号');
       if (!us[user]) {
         setAcctMode('reg');
@@ -1458,15 +1357,32 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!/^[\w\u4e00-\u9fa5]{2,16}$/.test(user)) return err('账号需2-16位，支持中文/字母/数字/下划线');
       if (pass.length < 4 || pass.length > 16) return err('密码需4-16位');
       if (pass !== $('#acctPass2').value) return err('两次输入的密码不一致');
-      if (us[user]) return err('该账号已被注册');
+            if (isOnline && supabase) {
+        try {
+          const { data, error } = await supabase.auth.signUp({
+            email: encodeURIComponent(user) + '@snackcat.local',
+            password: pass
+          });
+          if (error) { console.log('Supabase register skipped:', error.message); throw error; }
+          const u = newUser(data.user.id, user, pass);
+          await supabase.from('users').insert([{ id: data.user.id, ...u, created_at: new Date().toISOString() }]);
+          Store.saveUsers({ [data.user.id]: u }); Store.setSession(data.user.id);
+          ensureAudio();
+          enterApp(u);
+          hideModal('acctModal');
+          toast('注册成功，欢迎 ' + user + '！存档已绑定账号，云端同步 🎉');
+          return;
+        } catch (e) { console.log('Supabase register failed:', e.message); }
+      }
+if (us[user]) return err('该账号已被注册');
       const u = newUser(user, user, pass);
       us[user] = u;
       Store.saveUsers(us); Store.setSession(user);
       ensureAudio();
       enterApp(u);
       hideModal('acctModal');
-      if (!Store.lsOk) toast('浏览器存储受限，请到「我的」开启云端备份');
-      else toast('注册成功，欢迎 ' + user + '！存档已绑定账号，云端自动备份 🎉');
+      if (!Store.lsOk) toast('浏览器存储受限，数据可能无法保存');
+      else toast('注册成功，欢迎 ' + user + '！存档已绑定账号，云端同步 🎉');
     }
   });
   $('#nickBtn').addEventListener('click', openNick);
@@ -1498,45 +1414,9 @@ document.addEventListener('DOMContentLoaded', () => {
     getUser().sound = app.soundOn;
     saveUser(); renderMe();
   });
-  $('#cloudBtn').addEventListener('click', openCloud);
-  $('#backupBtn').addEventListener('click', () => { sfx('click'); exportBackup(); });
+    $('#backupBtn').addEventListener('click', () => { sfx('click'); exportBackup(); });
   $('#restoreBtn').addEventListener('click', () => { sfx('click'); $('#backupFile').click(); });
   $('#backupFile').addEventListener('change', handleBackupFile);
-  $('#cloudSave').addEventListener('click', () => {
-    const url = $('#cloudUrl').value.trim();
-    const cfg = Store.loadCloudCfg();
-    if (!url) {
-      cfg.url = ''; cfg.token = $('#cloudToken').value.trim(); cfg.status = '';
-      Store.saveCloudCfg(cfg);
-      Store.syncCloud(Store.loadUsers());
-      renderCloudStatus();
-      $('#cloudErr').textContent = '';
-      toast('已切回默认匿名云端，正在自动备份…');
-      return;
-    }
-    if (!/^https?:\/\/.+/.test(url)) { $('#cloudErr').textContent = '请输入有效的 http(s) 接口地址'; return; }
-    cfg.url = url; cfg.token = $('#cloudToken').value.trim();
-    cfg.status = '';
-    Store.saveCloudCfg(cfg);
-    $('#cloudErr').textContent = '';
-    Store.syncCloud(Store.loadUsers());
-    renderCloudStatus();
-    toast('云端配置已保存，正在上传存档…');
-  });
-  $('#cloudPull').addEventListener('click', () => {
-    const cfg = Store.loadCloudCfg();
-    if (!cfg.url) { $('#cloudErr').textContent = '云端备份尚未创建，等待自动备份完成后再试'; return; }
-    $('#cloudErr').textContent = '正在从云端下载…';
-    Store.cloudPull().then(() => {
-      const sid = Store.getSession();
-      if (sid && Store.memUsers[sid]) enterApp(Store.memUsers[sid]);
-      hideModal('cloudModal');
-      renderCloudStatus();
-      toast('云端数据已恢复 ✓');
-    }).catch(e => {
-      $('#cloudErr').textContent = '下载失败：' + (e && e.message ? e.message : '网络错误');
-    });
-  });
   $('#shareBtn').addEventListener('click', copyShareLink);
   $('#logoutBtn').addEventListener('click', () => {
     cfmCb = logout;
@@ -1559,7 +1439,7 @@ document.addEventListener('DOMContentLoaded', () => {
   $('#quitBtn').addEventListener('click', () => { sfx('click'); quitToHome(); });
   $('#againBtn').addEventListener('click', () => { sfx('click'); hideModal('resultModal'); startFlow(); });
   $('#homeBtn').addEventListener('click', () => { sfx('click'); quitToHome(); });
-  tryAutoLogin();
+  (async () => { await tryAutoLogin(); })();
   tryRestoreShare();
 });</script>
 </body>
