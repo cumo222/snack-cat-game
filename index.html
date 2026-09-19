@@ -1,0 +1,1548 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="theme-color" content="#FFE3EA"/>
+<title>小猫接零食</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans SC',system-ui,-apple-system,sans-serif;background:linear-gradient(160deg,#FFE9F0 0%,#CFE9FF 100%);overflow:hidden;touch-action:manipulation;color:#6E5A70}
+:root{--pink:#FFB7C5;--pink-d:#FF8FA3;--cream:#FFF3D6;--cream-d:#FFE3A9;--blue:#BDE3FF;--blue-d:#8FCBFF;--white:#FFFEF9;--text:#6E5A70;--text2:#A98FA8;--line:#F5E3EC;--sh1:0 8px 20px rgba(200,150,170,.22);--sh2:0 4px 12px rgba(200,150,170,.18);--ground-h:84px;--snack-w:clamp(46px,12.5vw,60px)}
+.phone{position:fixed;top:0;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:520px;overflow:hidden;background:linear-gradient(180deg,#FFE7EF 0%,#FFF3D6 48%,#CFE9FF 100%)}
+@media(min-width:540px){.phone{top:12px;bottom:12px;border-radius:34px;box-shadow:0 20px 80px rgba(150,100,120,.4)}}
+.page{position:absolute;inset:0;display:none;flex-direction:column;overflow:hidden}
+.page.show{display:flex;animation:pageIn .35s cubic-bezier(.34,1.4,.64,1)}
+@keyframes pageIn{from{opacity:0;transform:scale(.96) translateY(14px)}to{opacity:1;transform:none}}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;border:none;cursor:pointer;font-family:inherit;color:#fff;border-radius:999px;font-weight:800;letter-spacing:.5px;transition:transform .12s ease,box-shadow .12s ease,opacity .2s;user-select:none;-webkit-user-select:none}
+.btn:active{transform:scale(.93)}
+.btn-primary{background:linear-gradient(135deg,#FF9FB2,#FF7B93);box-shadow:0 8px 18px rgba(255,123,147,.4),inset 0 -4px 0 rgba(190,90,110,.25)}
+.btn-cream{background:linear-gradient(135deg,#FFF3D6,#FFD893);color:#A9743C;box-shadow:0 8px 18px rgba(255,216,147,.5),inset 0 -4px 0 rgba(220,160,80,.25)}
+.btn-blue{background:linear-gradient(135deg,#C8E8FF,#8FCBFF);color:#3E6E96;box-shadow:0 8px 18px rgba(143,203,255,.5),inset 0 -4px 0 rgba(90,150,200,.28)}
+.btn-ghost{background:rgba(255,255,255,.88);color:#B06B7E;box-shadow:0 6px 14px rgba(200,150,170,.22)}
+.btn-soft{background:rgba(255,255,255,.8);color:#6E5A70;border:2px solid var(--line);box-shadow:0 4px 10px rgba(200,150,170,.15)}
+.btn.disabled,.btn:disabled{opacity:.55;pointer-events:none}
+.btn-big{width:min(86%,300px);height:54px;font-size:17px;border-radius:999px}
+.btn-mid{padding:13px 22px;font-size:15px;border-radius:999px}
+.btn-sm{padding:9px 18px;font-size:13px;border-radius:999px}
+.btn-full{width:100%}
+.input{width:100%;padding:14px 16px;border-radius:18px;border:2.5px solid var(--line);background:#FFF9FC;font-size:15px;font-family:inherit;color:var(--text);outline:none;margin:8px 0;transition:border .2s;font-weight:600}
+.input:focus{border-color:var(--pink)}
+#toast{position:fixed;left:50%;bottom:130px;transform:translateX(-50%) scale(.9);background:rgba(90,70,95,.92);color:#fff;padding:11px 24px;border-radius:999px;font-size:14px;font-weight:700;opacity:0;pointer-events:none;z-index:999;transition:.25s;white-space:nowrap;max-width:86vw;text-align:center}
+#toast.show{opacity:1;transform:translateX(-50%) scale(1)}
+.modal{position:fixed;inset:0;z-index:200;display:none;align-items:center;justify-content:center;background:rgba(120,90,110,.45);backdrop-filter:blur(3px)}
+.modal.show{display:flex;animation:fadeIn .2s}
+.modal .panel{width:min(86%,360px);background:#fff;border-radius:32px;padding:24px 20px;box-shadow:0 20px 60px rgba(120,80,100,.35);animation:popIn .3s cubic-bezier(.34,1.45,.64,1);max-height:86vh;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes popIn{from{opacity:0;transform:scale(.8) translateY(20px)}to{opacity:1;transform:none}}
+.modal-title{font-size:18px;font-weight:900;text-align:center}
+.modal-desc{font-size:12px;color:var(--text2);text-align:center;margin:6px 0 2px;font-weight:600}
+.modal-err{min-height:20px;font-size:12px;color:#E5484D;font-weight:700;margin:4px 0 8px;text-align:center}
+.seg{display:flex;background:#F7EDF2;border-radius:999px;padding:4px;margin:12px 0 4px}
+.seg-btn{flex:1;border:none;background:transparent;padding:10px;border-radius:999px;font-weight:800;color:var(--text2);font-family:inherit;font-size:14px;cursor:pointer;transition:.2s}
+.seg-btn.active{background:#fff;color:var(--pink-d);box-shadow:0 3px 8px rgba(200,150,170,.2)}
+#loginPage{justify-content:center;align-items:center;background:linear-gradient(180deg,#FFDEEE 0%,#FFF1D8 52%,#C9E5FF 100%)}
+.login-deco{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.cloud{position:absolute;background:#fff;border-radius:999px;opacity:.8;animation:cloudDrift 7s ease-in-out infinite}
+.cloud::before,.cloud::after{content:"";position:absolute;background:#fff;border-radius:50%}
+.cloud::before{width:58%;height:170%;left:20%;top:-75%}
+.cloud::after{width:48%;height:135%;right:12%;top:-48%}
+.star{position:absolute;color:#FFD86E;font-size:20px;animation:twinkle 2.6s ease-in-out infinite}
+.login-box{position:relative;display:flex;flex-direction:column;align-items:center;gap:12px;padding:0 28px 34px;width:100%}
+.login-cat{width:min(250px,58vw);height:218px;display:flex;align-items:center;justify-content:center;margin-bottom:-8px}
+.login-cat svg{width:100%;height:100%;filter:drop-shadow(0 12px 16px rgba(210,130,150,.35))}
+.logo{font-size:34px;font-weight:900;color:#E56A8A;letter-spacing:3px;text-shadow:0 3px 0 #fff,0 6px 14px rgba(229,106,138,.3)}
+.slogan{font-size:14px;color:#A97B8C;font-weight:700;margin-bottom:10px}
+.login-tip{font-size:11px;color:#B99AA6;font-weight:600;margin-top:6px}
+.bottom-nav{position:absolute;left:0;right:0;bottom:0;height:calc(66px + env(safe-area-inset-bottom));padding-bottom:env(safe-area-inset-bottom);background:rgba(255,255,255,.93);backdrop-filter:blur(10px);display:flex;z-index:50;box-shadow:0 -4px 18px rgba(200,150,170,.18);border-radius:24px 24px 0 0}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:#C9AFC2;font-size:11px;font-weight:800;cursor:pointer;position:relative;transition:.2s}
+.nav-item svg{width:26px;height:26px}
+.nav-item.active{color:#FF7B93}
+.nav-item.active::before{content:"";position:absolute;top:3px;width:22px;height:4px;border-radius:99px;background:linear-gradient(90deg,#FFB7C5,#FF8FA3)}
+.tab-page{position:absolute;top:0;left:0;right:0;bottom:calc(70px + env(safe-area-inset-bottom));overflow-y:auto;padding:14px 16px 20px;display:none;opacity:0;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.tab-page.active{display:flex;flex-direction:column;opacity:1;animation:tabIn .34s cubic-bezier(.3,1.3,.6,1)}
+@keyframes tabIn{from{opacity:0;transform:translateY(18px) scale(.98)}to{opacity:1;transform:none}}
+.home-top{display:flex;align-items:center;gap:12px;padding:8px 4px 6px}
+.avatar{width:52px;height:48px;background:#fff;border-radius:50%;box-shadow:var(--sh2);display:flex;align-items:center;justify-content:center;overflow:hidden;flex:none;border:3px solid #fff}
+.avatar svg{width:100%;height:100%}
+.home-user{flex:1;min-width:0}
+.nick{font-weight:900;font-size:17px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sub{font-size:11px;color:var(--text2)}
+.coin-pill{display:flex;align-items:center;gap:6px;background:linear-gradient(135deg,#FFF3D6,#FFE3A9);border-radius:999px;padding:7px 14px;font-weight:900;color:#A9743C;box-shadow:var(--sh2);flex:none}
+.coin-pill svg{width:20px;height:20px}
+.coin-pill b{font-size:16px}
+.home-cat-card{flex:1;min-height:190px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;margin:4px 0}
+.home-cat{width:min(240px,58vw);height:min(215px,52vw);display:flex;align-items:center;justify-content:center}
+.home-cat svg{width:100%;height:100%}
+.home-cat-name{font-weight:900;color:#fff;background:linear-gradient(135deg,#FFB7C5,#FF8FA3);padding:5px 18px;border-radius:999px;box-shadow:var(--sh2);font-size:14px}
+.home-cat-tip{font-size:12px;color:var(--text2);margin-top:2px;font-weight:700}
+.btn-start{width:min(78%,300px);height:60px;font-size:20px;margin:6px auto 12px;letter-spacing:3px}
+#signBtn{margin:0 auto 12px;width:min(78%,300px)}
+.best-card{background:rgba(255,255,255,.78);border-radius:20px;padding:11px 18px;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--sh2);max-width:300px;width:78%;margin:0 auto}
+.best-title{font-weight:800;font-size:13px;color:var(--text2)}
+.best-num{font-weight:900;font-size:20px;color:#E56A8A}
+.page-title{font-size:19px;font-weight:900;text-align:center;padding:6px 0 2px}
+.page-foot{text-align:center;font-size:12px;color:var(--text2);margin-top:14px;font-weight:600}
+.char-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:14px}
+.char-card{background:#fff;border-radius:26px;padding:16px 10px 14px;display:flex;flex-direction:column;align-items:center;gap:8px;box-shadow:var(--sh2);cursor:pointer;transition:transform .2s,box-shadow .2s;position:relative;border:3px solid transparent}
+.char-card:active{transform:scale(.96)}
+.char-card.current{border-color:var(--pink);box-shadow:0 12px 26px rgba(255,143,163,.35)}
+.char-pic{width:112px;height:102px;display:flex;align-items:flex-end;justify-content:center}
+.char-pic svg{width:100%;height:auto}
+.char-name{font-weight:900;font-size:16px}
+.char-tag{font-size:12px;font-weight:800;padding:5px 14px;border-radius:999px}
+.char-tag.cur{background:#FFE3EA;color:#D44A6A}
+.char-tag.got{background:#E8F6EC;color:#3E9A63}
+.char-price{font-weight:900;color:#C98A2E;font-size:15px}
+.shop-list{display:flex;flex-direction:column;gap:12px;margin-top:14px}
+.shop-card{background:#fff;border-radius:24px;padding:14px;display:flex;align-items:center;gap:12px;box-shadow:var(--sh2)}
+.shop-icon{width:64px;height:64px;border-radius:20px;background:linear-gradient(145deg,#FFFDF7,var(--ic));display:flex;align-items:center;justify-content:center;flex:none;box-shadow:var(--sh1)}
+.shop-icon svg{width:46px;height:46px}
+.shop-info{flex:1;min-width:0}
+.shop-name{font-weight:900;font-size:16px}
+.shop-desc{font-size:12px;color:var(--text2);margin-top:3px;line-height:1.45}
+.shop-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex:none}
+.shop-have{font-size:12px;font-weight:800;color:var(--text2);background:#F7EDF2;padding:3px 10px;border-radius:999px}
+.me-card{background:#fff;border-radius:28px;padding:22px;display:flex;flex-direction:column;align-items:center;gap:6px;box-shadow:var(--sh2);margin-top:4px}
+.me-avatar{width:96px;height:88px}
+.me-avatar svg{width:100%;height:100%}
+.me-name{font-weight:900;font-size:19px}
+.me-sub{font-size:12px;color:var(--text2)}
+.stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}
+.stat{background:#fff;border-radius:22px;padding:14px 6px;text-align:center;box-shadow:var(--sh2)}
+.stat b{display:block;font-size:21px;font-weight:900;color:#E56A8A}
+.stat span{font-size:11px;color:var(--text2);font-weight:700}
+.me-btns{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+.cloud-card{background:#fff;border-radius:22px;padding:14px 16px;box-shadow:var(--sh2);margin-top:12px}
+.store-diag{font-size:12px;color:#7a6a8a;line-height:1.7;background:#FBF7FF;border-radius:14px;padding:10px 12px;border:1px dashed #E8DDF5}
+.diag-row.ok{color:#3E9A63}
+.diag-row.bad{color:#E56A8A;font-weight:600}
+.diag-row.tip{color:#A08FB5}
+.cloud-head{display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:900;color:#6B5A63}
+.cloud-state{font-size:12px;font-weight:800;color:#C9AFC2;transition:.3s}
+.btn-block{width:100%;padding:14px;font-size:15px}
+#gameScene{position:absolute;inset:0;overflow:hidden;background:linear-gradient(180deg,#FFD9E9 0%,#FFEFD6 40%,#C4E4FF 100%);touch-action:none;user-select:none;-webkit-user-select:none}
+.g-cloud{position:absolute;background:#fff;border-radius:999px;opacity:.75;z-index:1;animation:cloudDrift 8s ease-in-out infinite}
+.g-cloud::before,.g-cloud::after{content:"";position:absolute;background:#fff;border-radius:50%}
+.g-cloud::before{width:60%;height:160%;left:18%;top:-70%}
+.g-cloud::after{width:50%;height:130%;right:14%;top:-45%}
+.g-cloud.c1{width:110px;height:36px;left:8%;top:12%}
+.g-cloud.c2{width:150px;height:46px;right:6%;top:20%;animation-delay:1.6s}
+.g-cloud.c3{width:90px;height:30px;left:24%;top:30%;animation-delay:3s}
+@keyframes cloudDrift{0%,100%{transform:translateX(0)}50%{transform:translateX(16px)}}
+.g-star{position:absolute;color:#FFC96B;font-size:22px;z-index:1;animation:twinkle 2.4s ease-in-out infinite}
+.g-star.s1{left:14%;top:18%}
+.g-star.s2{right:14%;top:10%;animation-delay:.8s;color:#FFE08A}
+.g-star.s3{left:46%;top:22%;font-size:14px;animation-delay:1.4s}
+@keyframes twinkle{0%,100%{opacity:.35;transform:scale(.8)}50%{opacity:1;transform:scale(1.15)}}
+.ground{position:absolute;left:0;right:0;bottom:0;height:var(--ground-h);background:linear-gradient(180deg,#CFEFC9 0%,#A6E0AC 100%);border-radius:30px 30px 0 0;z-index:4;box-shadow:inset 0 -6px 0 rgba(120,170,120,.25)}
+.ground::before{content:"";position:absolute;top:12px;left:18px;right:18px;height:8px;border-radius:99px;background:rgba(255,255,255,.6)}
+.ground::after{content:"";position:absolute;bottom:16px;left:14px;right:14px;height:9px;background:radial-gradient(circle,#fff 4px,transparent 4.5px);background-size:56px 12px;opacity:.55}
+#snackLayer,#fxLayer{position:absolute;inset:0;pointer-events:none;z-index:3}
+#catBox{position:absolute;left:0;z-index:5;filter:drop-shadow(0 8px 10px rgba(160,110,120,.3));will-change:transform;pointer-events:none}
+.hud{position:absolute;top:calc(8px + env(safe-area-inset-top));left:0;right:0;padding:0 12px;display:flex;justify-content:space-between;pointer-events:none;z-index:30}
+.hud-left{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+.hud-row{display:flex;align-items:center;gap:8px}
+.hud-pill{display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.9);border-radius:999px;padding:6px 13px;box-shadow:var(--sh2);font-weight:900;font-size:16px;color:#E56A8A}
+.hud-pill.cool{color:#B5792A;font-size:14px}
+.hud-pill .coin-ico{width:17px;height:17px}
+.hud-lives{display:flex;align-items:center;gap:1px;background:rgba(255,255,255,.85);border-radius:999px;padding:6px 10px;box-shadow:var(--sh2)}
+.heart{animation:heartBeat 1.6s ease-in-out infinite}
+.heart.lost{animation:none;opacity:.3}
+@keyframes heartBeat{0%,100%{transform:scale(1)}12%{transform:scale(1.18)}}
+.pause-btn{position:absolute;top:calc(8px + env(safe-area-inset-top));right:12px;z-index:30;width:46px;height:46px;border-radius:50%;border:none;background:rgba(255,255,255,.92);box-shadow:var(--sh2);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .12s}
+.pause-btn:active{transform:scale(.88)}
+#itemTag{position:absolute;top:calc(64px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);z-index:30;background:linear-gradient(135deg,#FFE3EA,#FFC9D4);color:#C64D6C;font-size:13px;font-weight:900;padding:7px 18px;border-radius:999px;box-shadow:var(--sh2);opacity:0;transition:.3s;pointer-events:none;white-space:nowrap}
+#itemTag.show{opacity:1}
+.snack{position:absolute;width:var(--snack-w);height:var(--snack-w);left:0;top:0;z-index:3;will-change:transform;filter:drop-shadow(0 4px 6px rgba(150,100,110,.25))}
+.snack svg{width:100%;height:100%;display:block}
+.fx{position:absolute;z-index:6;font-weight:900;color:#fff;text-shadow:0 2px 4px rgba(150,80,100,.4);animation:fxPop .8s ease-out forwards;pointer-events:none;font-size:18px}
+@keyframes fxPop{0%{opacity:0;transform:translateY(0) scale(.6)}20%{opacity:1;transform:scale(1.15)}100%{opacity:0;transform:translateY(-34px) scale(1)}}
+.particle{position:absolute;width:10px;height:10px;border-radius:50%;z-index:6;animation:partFly .6s ease-out forwards;pointer-events:none}
+@keyframes partFly{to{transform:translate(var(--dx),var(--dy)) scale(.2);opacity:0}}
+.item-list{display:flex;flex-direction:column;gap:10px;margin:14px 0}
+.item-pick{display:flex;align-items:center;gap:12px;background:#FFF8FC;border:2.5px solid var(--line);border-radius:20px;padding:10px 12px;cursor:pointer;transition:.18s}
+.item-pick.on{border-color:var(--pink);background:#FFF0F5;box-shadow:0 4px 14px rgba(255,143,163,.25)}
+.ip-icon{width:46px;height:46px;flex:none}
+.ip-icon svg{width:100%;height:100%}
+.ip-txt{flex:1;display:flex;flex-direction:column;gap:2px}
+.ip-txt b{font-size:15px;font-weight:900}
+.ip-txt span{font-size:12px;color:var(--text2);font-weight:700}
+.ip-check{width:24px;height:24px;border-radius:50%;border:2.5px solid #E5C9D6;display:flex;align-items:center;justify-content:center;color:transparent;font-weight:900;font-size:14px;transition:.18s;flex:none}
+.item-pick.on .ip-check{background:linear-gradient(135deg,#FFB7C5,#FF7B93);border-color:transparent;color:#fff}
+.res-title{font-size:21px;font-weight:900;text-align:center;margin-bottom:2px}
+.res-new{text-align:center;color:#FF7B93;font-weight:900;font-size:14px;margin-bottom:10px;animation:heartBeat 1.2s infinite}
+.res-row{display:flex;justify-content:space-between;align-items:center;background:#FFF8FC;border-radius:16px;padding:12px 16px;margin:8px 0;font-weight:700;font-size:14px;color:var(--text2)}
+.res-row b{font-size:19px;color:var(--text);font-weight:900}
+.res-row .gold{color:#D99A2B}
+/* ===== Q版小猫动画 ===== */
+.cat-art{display:block}
+.catBodyG{transform-box:fill-box;transform-origin:center bottom;animation:breathe 2.6s ease-in-out infinite}
+@keyframes breathe{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-3px) scale(1.015)}}
+.catTail{transform-box:fill-box;transform-origin:18% 82%;animation:tailWag 3s ease-in-out infinite}
+@keyframes tailWag{0%,100%{transform:rotate(-12deg)}50%{transform:rotate(14deg)}}
+.catEarL,.catEarR{transform-box:fill-box;transform-origin:bottom center}
+.catRunner .catLegL,.catRunner .catLegR{transform-box:fill-box;transform-origin:center;animation:step .28s ease-in-out infinite}
+.catRunner .catLegR{animation-delay:.14s}
+@keyframes step{0%,100%{transform:rotate(0)}50%{transform:rotate(26deg)}}
+.catRunner .catTail{animation-duration:.7s}
+.catEating .catMouthOpen{display:none}
+.catEating .catMouthClose{display:block;transform-box:fill-box;transform-origin:center top;animation:chew .26s ease-in-out 2}
+.catEating .catEyeOpen{display:none}
+.catEating .catEyeHappy{display:block}
+.catEating .catBodyG{animation:breathe 2.6s ease-in-out infinite,nodTiny .26s ease-in-out 2}
+@keyframes chew{0%,100%{transform:scale(1,1)}50%{transform:scale(.8,.75)}}
+@keyframes nodTiny{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+.catSad .catEarL{animation:earDropL .35s cubic-bezier(.3,1.6,.5,1) forwards}
+.catSad .catEarR{animation:earDropR .35s cubic-bezier(.3,1.6,.5,1) forwards}
+@keyframes earDropL{to{transform:rotate(22deg) translateY(6px)}}
+@keyframes earDropR{to{transform:rotate(-22deg) translateY(6px)}}
+.catSad .catEyeOpen{display:none}
+.catSad .catEyeSad{display:block}
+.catSad .catMouthOpen{display:none}
+.catSad .catMouthSad{display:block}
+.catSad .catTear{display:block;transform-box:fill-box;transform-origin:center;animation:tearDrop .55s ease-in forwards}
+@keyframes tearDrop{0%{opacity:0;transform:translateY(0) scale(.7)}25%{opacity:1}100%{opacity:0;transform:translateY(16px) scale(1.05)}}
+.catSad .catBodyG{animation:catShake .28s linear 2}
+@keyframes catShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+#appPage{background:linear-gradient(180deg,#FFF9F2 0%,#FFF2EC 42%,#FDF4FA 100%)}
+#appPage::before{content:"";position:absolute;top:-70px;left:50%;transform:translateX(-50%);width:130%;height:210px;background:radial-gradient(ellipse at center,rgba(255,183,197,.32),transparent 66%);pointer-events:none}
+.float-snack{position:absolute;z-index:0;opacity:.92;filter:drop-shadow(0 4px 6px rgba(180,120,140,.22));animation:floatY 5.2s ease-in-out infinite;pointer-events:none}
+.float-snack.f1{left:8%;top:18%;font-size:30px}
+.float-snack.f2{left:76%;top:32%;font-size:24px;animation-delay:1.2s}
+.float-snack.f3{left:14%;top:66%;font-size:22px;animation-delay:2.1s}
+.float-snack.f4{right:10%;top:9%;font-size:26px;animation-delay:.6s}
+@keyframes floatY{0%,100%{transform:translateY(0) rotate(-7deg)}50%{transform:translateY(-15px) rotate(9deg)}}
+.snack svg{animation:snackPop .34s cubic-bezier(.3,1.5,.6,1)}
+@keyframes snackPop{0%{transform:scale(.2) rotate(-45deg);opacity:.35}60%{transform:scale(1.14) rotate(6deg)}100%{transform:scale(1) rotate(0)}}
+.catRunner .catBodyG{animation:runBob .3s ease-in-out infinite}
+@keyframes runBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2.6px)}}
+.catRunner .catLegL{animation:step .24s ease-in-out infinite}
+.catRunner .catLegR{animation:step .24s ease-in-out infinite;animation-delay:.12s}
+.catEating::after{content:"♥";position:absolute;top:-16px;left:50%;transform:translateX(-50%);color:#FF7B93;font-size:15px;pointer-events:none;animation:lovePop .55s ease-out forwards}
+@keyframes lovePop{0%{opacity:0;transform:translate(-50%,6px) scale(.5)}25%{opacity:1;transform:translate(-50%,-2px) scale(1.12)}100%{opacity:0;transform:translate(-50%,-16px) scale(.9)}}
+::-webkit-scrollbar{width:0;height:0}
+</style>
+</head><body>
+<div id="phone" class="phone">
+  <!-- ===== 登录页 ===== -->
+  <div id="loginPage" class="page show">
+    <div class="login-deco">
+      <div class="star" style="left:12%;top:12%">✦</div>
+      <div class="star" style="left:78%;top:8%;animation-delay:.6s">✦</div>
+      <div class="star" style="left:86%;top:30%;animation-delay:1.2s;font-size:15px">✧</div>
+      <div class="star" style="left:8%;top:34%;animation-delay:.9s;font-size:15px">✧</div>
+      <div class="cloud" style="left:6%;top:16%;width:92px;height:34px"></div>
+      <div class="cloud" style="left:62%;top:24%;width:120px;height:40px;animation-delay:1.4s"></div>
+      <div class="cloud" style="left:30%;top:42%;width:80px;height:28px;animation-delay:.7s"></div>
+      <div class="cloud" style="right:8%;top:58%;width:100px;height:34px;animation-delay:2s"></div>
+      <div class="float-snack f1">🍭</div>
+      <div class="float-snack f2">🧁</div>
+      <div class="float-snack f3">🍪</div>
+      <div class="float-snack f4">🍬</div>
+    </div>
+    <div class="login-box">
+      <div class="login-cat"><div id="loginCat"></div></div>
+      <h1 class="logo">小猫接零食</h1>
+      <p class="slogan">张开大嘴 · 接住所有美味！</p>
+      <button id="guestBtn" class="btn btn-primary btn-big">🐾 一键开始游戏</button>
+      <button id="acctBtn" class="btn btn-ghost btn-big">👤 账号登录 / 注册</button>
+      <p class="login-tip">无需注册 · 数据云端自动保存</p>
+    </div>
+  </div>
+
+  <!-- ===== 主界面 ===== -->
+  <div id="appPage" class="page">
+    <div id="tabHome" class="tab-page active">
+      <header class="home-top">
+        <div class="avatar"><svg id="homeAvatar"></svg></div>
+        <div class="home-user">
+          <div class="nick" id="homeNick"></div>
+          <div class="sub" id="homeId"></div>
+        </div>
+        <div class="coin-pill"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#FFD24D" stroke="#E8A33D" stroke-width="2.5"/><circle cx="12" cy="12" r="6.5" fill="none" stroke="#FFE58A" stroke-width="2"/></svg><b id="homeCoins">0</b></div>
+      </header>
+      <div class="home-cat-card">
+        <div class="home-cat"><div id="homeCat"></div></div>
+        <div class="home-cat-name" id="homeCatName">大橘</div>
+        <div class="home-cat-tip">按住左右滑动 · 接住所有零食</div>
+      </div>
+      <button id="startBtn" class="btn btn-primary btn-start">🍭 开始游戏</button>
+      <button id="signBtn" class="btn btn-cream btn-mid">🎁 每日签到</button>
+      <div class="best-card">
+        <div class="best-title">🏆 历史最高分</div>
+        <div class="best-num" id="homeBest">0</div>
+      </div>
+    </div>
+
+    <div id="tabChar" class="tab-page">
+      <h2 class="page-title">✨ 我的角色</h2>
+      <div id="charList" class="char-grid"></div>
+      <p class="page-foot">点击角色切换出战 · 更多颜色皮肤持续上新</p>
+    </div>
+
+    <div id="tabShop" class="tab-page">
+      <h2 class="page-title">🧺 道具商店</h2>
+      <div id="shopList" class="shop-list"></div>
+      <p class="page-foot">道具购买后存入背包，开局前可选择使用</p>
+    </div>
+
+    <div id="tabMe" class="tab-page">
+      <div class="me-card">
+        <div class="me-avatar"><svg id="meAvatar"></svg></div>
+        <div class="me-name" id="meNick"></div>
+        <div class="me-sub" id="meUid"></div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat"><b id="statBest">0</b><span>🏆 历史最高分</span></div>
+        <div class="stat"><b id="statTotal">0</b><span>🪙 累计金币</span></div>
+        <div class="stat"><b id="statStreak">0</b><span>📅 连续签到</span></div>
+      </div>
+      <div class="cloud-card">
+        <div class="cloud-head">☁️ 云端同步 <span class="cloud-state" id="cloudState">未开启</span></div>
+        <button id="cloudBtn" class="btn btn-blue btn-block" style="margin-top:10px">⚙️ 云端备份设置</button>
+      </div>
+      <div class="cloud-card">
+        <div class="cloud-head">💾 本地存档备份（不依赖网络）</div>
+        <p class="page-foot" style="margin:2px 0 0">导出文件随身保存：换手机 / 换电脑 / 换浏览器 / 文件更新后，导入一次即可找回全部账号与数据。</p>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button id="backupBtn" class="btn btn-soft btn-block">💾 导出存档</button>
+          <button id="restoreBtn" class="btn btn-soft btn-block">📂 导入恢复</button>
+        </div>
+        <input type="file" id="backupFile" accept=".json,application/json" style="display:none"/>
+        <div class="store-diag" id="storeDiag" style="margin-top:10px"></div>
+      </div>
+      <div class="me-btns">
+        <button id="shareBtn" class="btn btn-soft btn-block">📋 复制分享链接</button>
+        <button id="nickBtn" class="btn btn-soft btn-block">✏️ 修改昵称</button>
+        <button id="passBtn" class="btn btn-soft btn-block">🔒 设置登录密码</button>
+        <button id="soundBtn" class="btn btn-soft btn-block">🔊 音效：开</button>
+        <button id="logoutBtn" class="btn btn-ghost btn-block">🚪 退出登录</button>
+      </div>
+    </div>
+
+    <nav class="bottom-nav">
+      <div class="nav-item active" data-tab="home"><svg viewBox="0 0 24 24"><path d="M4 11 L12 4 L20 11 V20 H14 V14 H10 V20 H4 Z" fill="currentColor"/></svg><span>首页</span></div>
+      <div class="nav-item" data-tab="char"><svg viewBox="0 0 24 24"><path d="M12 21 C5 15 2.5 9 5.5 5.5 C8 3 10 4.5 12 7 C14 4.5 16 3 18.5 5.5 C21.5 9 19 15 12 21 Z" fill="#fff" stroke="currentColor" stroke-width="2.2"/><circle cx="9.4" cy="11.5" r="1.4" fill="currentColor"/><circle cx="14.6" cy="11.5" r="1.4" fill="currentColor"/><path d="M10.5 14.5 Q12 16 13.5 14.5" stroke="currentColor" stroke-width="1.6" fill="none"/></svg><span>角色</span></div>
+      <div class="nav-item" data-tab="shop"><svg viewBox="0 0 24 24"><path d="M5 8 H19 L18 20 A2 2 0 0 1 16 21.6 H8 A2 2 0 0 1 6 20 Z" fill="currentColor"/><path d="M9 8 V6.5 A3 3 0 0 1 15 6.5 V8" stroke="currentColor" stroke-width="2.2" fill="none"/></svg><span>商店</span></div>
+      <div class="nav-item" data-tab="me"><svg viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="4" fill="currentColor"/><path d="M4 20.5 Q4 15 12 15 Q20 15 20 20.5 Z" fill="currentColor"/></svg><span>我的</span></div>
+    </nav>
+  </div>
+
+  <!-- ===== 游戏页 ===== -->
+  <div id="gamePage" class="page">
+    <div id="gameScene">
+      <div class="g-star s1">✦</div><div class="g-star s2">✦</div><div class="g-star s3">✧</div>
+      <div class="g-cloud c1"></div><div class="g-cloud c2"></div><div class="g-cloud c3"></div>
+      <div id="snackLayer"></div>
+      <div id="fxLayer"></div>
+      <div id="catBox"></div>
+      <div class="ground"></div>
+      <div class="hud">
+        <div class="hud-left">
+          <div class="hud-row">
+            <div class="hud-pill"><svg viewBox="0 0 24 24" width="18" height="18"><path d="M12 2 L14.9 8.6 L22 9.3 L16.5 14.2 L18.1 21.2 L12 17.6 L5.9 21.2 L7.5 14.2 L2 9.3 L9.1 8.6 Z" fill="#FFB84D"/></svg><b id="hudScore">0</b></div>
+            <div class="hud-lives" id="hudLives"></div>
+          </div>
+          <div class="hud-pill cool"><svg class="coin-ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#FFD24D" stroke="#E8A33D" stroke-width="2.5"/><circle cx="12" cy="12" r="6.5" fill="none" stroke="#FFE58A" stroke-width="2"/></svg><b id="hudCoins">0</b></div>
+        </div>
+      </div>
+      <button id="pauseBtn" class="pause-btn"><svg viewBox="0 0 24 24" width="20" height="20"><rect x="6" y="5" width="4.4" height="14" rx="2" fill="#B06B7E"/><rect x="13.6" y="5" width="4.4" height="14" rx="2" fill="#B06B7E"/></svg></button>
+      <div id="itemTag"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 弹窗 ===== -->
+<div id="acctModal" class="modal dismissible"><div class="panel">
+  <div class="modal-title" id="acctTitle">登录账号</div>
+  <div class="seg">
+    <button class="seg-btn active" id="segLogin">登录</button>
+    <button class="seg-btn" id="segReg">注册</button>
+  </div>
+  <input id="acctUser" class="input" placeholder="账号（2-16位，中文/字母/数字）" maxlength="16"/>
+  <input id="acctPass" class="input" type="password" placeholder="密码（4-16位）" maxlength="16"/>
+  <input id="acctPass2" class="input" type="password" placeholder="确认密码" maxlength="16" style="display:none"/>
+  <div class="modal-desc" id="acctTip">还没有账号？输入账号后直接点「登 录」，即可一步完成注册</div>
+  <div class="modal-err" id="acctErr"></div>
+  <button id="acctOk" class="btn btn-primary btn-mid btn-full">登 录</button>
+  <button class="btn btn-soft btn-mid btn-full" data-close style="margin-top:8px">取 消</button>
+</div></div>
+
+<div id="nickModal" class="modal dismissible"><div class="panel">
+  <div class="modal-title">修改昵称</div>
+  <input id="nickInput" class="input" maxlength="12" placeholder="输入新昵称（最多12字）"/>
+  <div class="modal-err" id="nickErr"></div>
+  <button id="nickOk" class="btn btn-primary btn-mid btn-full">保 存</button>
+  <button class="btn btn-soft btn-mid btn-full" data-close style="margin-top:8px">取 消</button>
+</div></div>
+
+<div id="passModal" class="modal dismissible"><div class="panel">
+  <div class="modal-title">设置登录密码</div>
+  <p class="modal-desc">设置后即可用「账号 + 密码」登录</p>
+  <input id="pass1" class="input" type="password" placeholder="新密码（4-16位）" maxlength="16"/>
+  <input id="pass2" class="input" type="password" placeholder="确认密码" maxlength="16"/>
+  <div class="modal-err" id="passErr"></div>
+  <button id="passOk" class="btn btn-primary btn-mid btn-full">保 存</button>
+  <button class="btn btn-soft btn-mid btn-full" data-close style="margin-top:8px">取 消</button>
+</div></div>
+
+<div id="itemModal" class="modal"><div class="panel">
+  <div class="modal-title">🎒 选择道具</div>
+  <p class="modal-desc">勾选本局使用的道具（使用后消耗）</p>
+  <div id="itemList" class="item-list"></div>
+  <button id="itemGo" class="btn btn-primary btn-mid btn-full">出发吃零食！</button>
+  <button id="itemSkip" class="btn btn-soft btn-mid btn-full" style="margin-top:8px">不带道具直接开始</button>
+</div></div>
+
+<div id="pauseModal" class="modal"><div class="panel">
+  <div class="modal-title">⏸ 游戏暂停</div>
+  <p class="modal-desc">休息一下，零食们都在等你</p>
+  <div style="height:14px"></div>
+  <button id="resumeBtn" class="btn btn-primary btn-mid btn-full">继续游戏</button>
+  <button id="restartBtn" class="btn btn-blue btn-mid btn-full" style="margin-top:10px">重新开始</button>
+  <button id="quitBtn" class="btn btn-soft btn-mid btn-full" style="margin-top:10px">返回主界面</button>
+</div></div>
+
+<div id="resultModal" class="modal"><div class="panel">
+  <div class="res-title">🎊 游戏结束</div>
+  <div id="resNew" class="res-new" style="display:none">🎉 新纪录诞生！</div>
+  <div class="res-row"><span>本局得分</span><b id="resScore">0</b></div>
+  <div class="res-row"><span>获得金币</span><b id="resCoins" class="gold">+0</b></div>
+  <div class="res-row"><span>历史最高分</span><b id="resBest">0</b></div>
+  <button id="againBtn" class="btn btn-primary btn-mid btn-full" style="margin-top:14px">再来一局</button>
+  <button id="homeBtn" class="btn btn-soft btn-mid btn-full" style="margin-top:10px">返回主界面</button>
+</div></div>
+
+<div id="confirmModal" class="modal"><div class="panel">
+  <div class="modal-title" id="cfmTitle">提示</div>
+  <p class="modal-desc" id="cfmText" style="margin-top:10px"></p>
+  <div style="height:12px"></div>
+  <button id="cfmOk" class="btn btn-primary btn-mid btn-full">确 定</button>
+  <button id="cfmCancel" class="btn btn-soft btn-mid btn-full" data-close style="margin-top:10px">取 消</button>
+</div></div>
+
+<div id="cloudModal" class="modal dismissible"><div class="panel">
+  <div class="modal-title">☁️ 云端备份</div>
+  <p class="modal-desc" style="margin-top:8px">已默认开通匿名云端自动备份（jsonblob，无需注册），每次存档变更自动同步。若云端显示"不可用"，多为公共云端被网络限制——此时存档仍安全保存在本地。请优先使用「我的 → 导出存档」做文件备份，或在此填入你自有的接口（任意支持 GET/PUT JSON 且允许跨域 CORS 的服务，如自建 API、JSONBin 类存储）覆盖默认云端。</p>
+  <input id="cloudUrl" class="input" type="text" placeholder="自定义云端接口（选填），留空用默认云端"/>
+  <input id="cloudToken" class="input" type="password" style="margin-top:8px" placeholder="Token / Key（可选）"/>
+  <div class="modal-err" id="cloudErr"></div>
+  <button id="cloudSave" class="btn btn-primary btn-mid btn-full">保存并立即上传</button>
+  <button id="cloudPull" class="btn btn-cream btn-mid btn-full" style="margin-top:8px">从云端下载恢复</button>
+  <p class="page-foot" id="cloudHint" style="margin-top:10px"></p>
+</div></div>
+<div id="toast"></div>
+<script>
+//__JS_A__
+//__JS_B__
+//__JS_C__
+'use strict';
+/* ================= 工具函数 ================= */
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const rand = (a, b) => a + Math.random() * (b - a);
+const randInt = (a, b) => Math.floor(rand(a, b + 1));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const pad = n => String(n).padStart(2, '0');
+const fmtDate = d => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+const todayStr = () => fmtDate(new Date());
+const yesterdayStr = () => fmtDate(new Date(Date.now() - 864e5));
+const uid = () => 'snk_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+
+/* ================= 数据存储（账号绑定 + 云端自动备份 + 可配置自有接口） =================
+   账号即数据钥匙：每个账号的存档独立保存并自动绑定账号。
+   云端：默认使用 jsonblob.com 匿名云端（无需注册，首次自动建仓、此后每次变更自动同步；
+   公共匿名空间，请勿存放敏感信息）。也可在「我的」→ 云备份 填入自有 JSON 存储接口
+   （GET/PUT JSON、允许 CORS）覆盖默认云端。云端不可达时自动降级为本地保存，不中断游戏。 */
+const Store = {
+  KEY_USERS: 'snackCat_users_v1',
+  KEY_SESSION: 'snackCat_session_v1',
+  KEY_CLOUD: 'snackCat_cloud_v1',
+  KEY_CLOUD_CFG: 'snackCat_cloudCfg_v1',
+  CLOUD_POST: 'https://jsonblob.com/api/jsonBlob',
+  memUsers: null,
+  lsOk: true,
+  _cloudBusy: false,
+  _latest: null,
+  loadUsers() {
+    if (this.memUsers) return this.memUsers;
+    try {
+      const v = JSON.parse(localStorage.getItem(this.KEY_USERS));
+      if (v) { this.memUsers = v; return v; }
+    } catch (e) { this.lsOk = false; }
+    this.memUsers = {}; return this.memUsers;
+  },
+  saveUsers(u) {
+    this.memUsers = u;
+    try { localStorage.setItem(this.KEY_USERS, JSON.stringify(u)); } catch (e) { this.lsOk = false; }
+    this.syncCloud(u);
+  },
+  getSession() { try { return localStorage.getItem(this.KEY_SESSION) || ''; } catch (e) { return ''; } },
+  setSession(id) { try { id ? localStorage.setItem(this.KEY_SESSION, id) : localStorage.removeItem(this.KEY_SESSION); } catch (e) { } },
+  loadCloudCfg() {
+    try {
+      const v = JSON.parse(localStorage.getItem(this.KEY_CLOUD_CFG));
+      if (v && typeof v === 'object') return v;
+    } catch (e) { }
+    return { url: '', token: '', lastSync: 0, status: '' };
+  },
+  saveCloudCfg(cfg) {
+    try { localStorage.setItem(this.KEY_CLOUD_CFG, JSON.stringify(cfg)); } catch (e) { }
+  },
+  syncCloud(users) {
+    const snap = { v: 2, app: 'snackCat', ts: Date.now(), users: users || this.memUsers || {} };
+    try { localStorage.setItem(this.KEY_CLOUD, JSON.stringify(snap)); } catch (e) { }
+    if (typeof fetch !== 'function') return;
+    this._latest = snap;
+    if (this._cloudBusy) return;
+    this._send(snap);
+  },
+  _send(snap) {
+    const cfg = this.loadCloudCfg();
+    this._cloudBusy = true;
+    this._latest = null;
+    const headers = { 'Content-Type': 'application/json', 'Accept': 'application/json' };
+    if (cfg.token) headers['Authorization'] = 'Bearer ' + cfg.token;
+    const pUrl = cfg.url || this.CLOUD_POST;
+    const method = cfg.url ? 'PUT' : 'POST';
+    const ctrl = (typeof AbortController === 'function') ? new AbortController() : null;
+    const to = ctrl ? setTimeout(() => ctrl.abort(), 9000) : null;
+    const ok = () => {
+      const cur = this.loadCloudCfg();
+      if (!cur.url && cfg.url) cur.url = cfg.url;
+      cur.lastSync = Date.now(); cur.status = 'ok';
+      this.saveCloudCfg(cur);
+      if (typeof renderCloudStatus === 'function') renderCloudStatus();
+    };
+    const fail = () => {
+      const cur = this.loadCloudCfg();
+      cur.status = 'err';
+      this.saveCloudCfg(cur);
+      if (typeof renderCloudStatus === 'function') renderCloudStatus();
+    };
+    fetch(pUrl, { method: method, headers: headers, body: JSON.stringify(snap), signal: ctrl ? ctrl.signal : undefined })
+      .then(r => {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        if (!cfg.url) {
+          let loc = null;
+          try { loc = r.headers && r.headers.get ? r.headers.get('Location') : null; } catch (e) { }
+          if (!loc) throw new Error('no-location');
+          cfg.url = loc;
+        }
+        ok();
+      })
+      .catch(fail)
+      .finally(() => { if (to) clearTimeout(to); this._cloudBusy = false; const next = this._latest; if (next) this._send(next); });
+  },
+  cloudPull() {
+    const cfg = this.loadCloudCfg();
+    if (typeof fetch !== 'function') return Promise.reject(new Error('cloud-not-configured'));
+    if (!cfg.url) return Promise.reject(new Error('cloud-not-configured'));
+    const headers = {};
+    if (cfg.token) headers['Authorization'] = 'Bearer ' + cfg.token;
+    return fetch(cfg.url, { method: 'GET', headers: headers })
+      .then(r => { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+      .then(snap => {
+        if (!snap || !snap.users || snap.app !== 'snackCat') throw new Error('bad-data');
+        const local = this.loadUsers();
+        Object.assign(local, snap.users);
+        this.memUsers = local;
+        try { localStorage.setItem(this.KEY_USERS, JSON.stringify(local)); } catch (e) { this.lsOk = false; }
+        cfg.lastSync = Date.now(); cfg.status = 'ok';
+        this.saveCloudCfg(cfg);
+        return snap;
+      });
+  }
+};
+
+/* ================= 角色定义 ================= */
+const CHARS = [
+  { id: 'orange', name: '大橘', price: 0, colors: { main: '#FFB25E', dark: '#E8943A', belly: '#FFEDD0', inner: '#FFD9A8', blush: '#FFB3B3' } },
+  { id: 'pink', name: '草莓粉', price: 500, colors: { main: '#FFB7C5', dark: '#F08CA2', belly: '#FFF0F4', inner: '#FF8FA3', blush: '#FF9FB2' } },
+  { id: 'cream', name: '奶油黄', price: 800, colors: { main: '#FFE0A3', dark: '#F3BE5F', belly: '#FFF8E8', inner: '#FFCC80', blush: '#FFC7A0' } },
+  { id: 'blue', name: '蓝莓蓝', price: 1200, colors: { main: '#A9DDFF', dark: '#6FB4EC', belly: '#EAF6FF', inner: '#8FCBFF', blush: '#B8E1FF' } },
+  { id: 'white', name: '香草白', price: 1800, colors: { main: '#FFF3E4', dark: '#EBD09F', belly: '#FFFDF8', inner: '#FFE3B8', blush: '#FFC9C0' } }
+];
+const CHAR_MAP = Object.fromEntries(CHARS.map(c => [c.id, c]));
+
+/* ================= 零食定义 ================= */
+const SNACKS = {
+  fish: { name: '小鱼干', pts: 10, coins: [2, 3], w: 0.9, svg() { return `<svg viewBox="0 0 60 60" width="100%" height="100%"><path d="M6 30 Q6 10 28 10 Q44 10 52 22 L58 16 L58 44 L52 38 Q42 50 26 50 Q6 50 6 30 Z" fill="#FFC94D" stroke="#8A5A3B" stroke-width="3" stroke-linejoin="round"/><circle cx="30" cy="27" r="4.5" fill="#8A5A3B"/><circle cx="31.6" cy="25.2" r="1.6" fill="#fff"/><path d="M22 39 Q31 44 40 37" stroke="#E8A33D" stroke-width="3" fill="none" stroke-linecap="round"/></svg>` } },
+  cake: { name: '小蛋糕', pts: 15, coins: [2, 3], w: 1, svg() { return `<svg viewBox="0 0 60 60" width="100%" height="100%"><path d="M16 28 L44 28 L40 52 Q30 56 20 52 Z" fill="#FFD7DB" stroke="#C96A7E" stroke-width="3" stroke-linejoin="round"/><path d="M14 20 Q16 8 30 8 Q44 8 46 20 Q40 14 30 14 Q20 14 14 20 Z" fill="#FFF8F0" stroke="#E8BFA0" stroke-width="2.5"/><path d="M14 20 Q30 30 46 20 Q46 25 30 33 Q14 25 14 20 Z" fill="#FFF8F0" stroke="#E8BFA0" stroke-width="2.5"/><circle cx="30" cy="11" r="6" fill="#FF6B81" stroke="#D94A63" stroke-width="2.5"/><circle cx="22" cy="40" r="2" fill="#FF9FB2"/><circle cx="38" cy="44" r="2" fill="#FF9FB2"/></svg>` } },
+  candy: { name: '棒棒糖', pts: 8, coins: [2, 2], w: 0.85, svg() { return `<svg viewBox="0 0 60 60" width="100%" height="100%"><rect x="27" y="34" width="6" height="22" rx="3" fill="#E8D5C0" stroke="#C9B08F" stroke-width="2"/><circle cx="30" cy="22" r="17" fill="#FF9CC0" stroke="#E26FA0" stroke-width="3"/><path d="M27 27 Q29 20 33 22 Q37 24 33 29 Q29 33 24 30 Q21 25 25 20 Q30 14 35 18 Q41 23 36 29" fill="none" stroke="#fff" stroke-width="5" stroke-linecap="round"/></svg>` } },
+  cookie: { name: '小饼干', pts: 12, coins: [2, 3], w: 1, svg() { return `<svg viewBox="0 0 60 60" width="100%" height="100%"><circle cx="30" cy="31" r="19" fill="#E8B77A" stroke="#B9804D" stroke-width="3"/><circle cx="30" cy="31" r="11" fill="none" stroke="#F3CE96" stroke-width="2" opacity=".7"/><circle cx="21" cy="26" r="4.2" fill="#6E3F30"/><circle cx="38" cy="24" r="3.6" fill="#6E3F30"/><circle cx="33" cy="39" r="4.2" fill="#6E3F30"/><circle cx="23" cy="40" r="3" fill="#6E3F30"/></svg>` } },
+  milktea: { name: '奶茶', pts: 20, coins: [3, 4], w: 1, svg() { return `<svg viewBox="0 0 60 60" width="100%" height="100%"><rect x="33" y="4" width="6" height="14" rx="3" fill="#FF8FA3" stroke="#E56A8A" stroke-width="2"/><path d="M14 16 L20 52 Q30 58 40 52 L46 16 Z" fill="#FFE9DC" stroke="#D98E62" stroke-width="3" stroke-linejoin="round"/><rect x="10" y="10" width="40" height="11" rx="5.5" fill="#BDE3FF" stroke="#7FB8E8" stroke-width="3"/><circle cx="26" cy="42" r="3" fill="#6B4A55"/><circle cx="34" cy="46" r="3" fill="#6B4A55"/><circle cx="22" cy="50" r="2.4" fill="#6B4A55"/><path d="M20 24 Q24 27 28 24" stroke="#F5B98C" stroke-width="2.5" fill="none"/></svg>` } }
+};
+const SNACK_KEYS = Object.keys(SNACKS);
+const SNACK_WEIGHT = [['fish', 24], ['cookie', 22], ['candy', 22], ['cake', 20], ['milktea', 12]];
+function pickSnack() {
+  const total = SNACK_WEIGHT.reduce((s, x) => s + x[1], 0);
+  let r = Math.random() * total;
+  for (const [k, w] of SNACK_WEIGHT) { r -= w; if (r <= 0) return k; }
+  return 'fish';
+}
+
+/* ================= 道具定义 ================= */
+const ITEMS = {
+  magnet: { name: '磁铁', desc: '本局前10秒自动吸附附近零食', price: 200, color: '#BDE3FF' },
+  doubleCoin: { name: '双倍金币', desc: '本局获得的金币数量翻倍', price: 150, color: '#FFE0A3' },
+  extraLife: { name: '额外生命', desc: '本局生命 +1，开局4条命', price: 180, color: '#FFB7C5' }
+};
+
+/* ================= SVG 资产 ================= */
+function catSVG(c) {
+  const m = c.main, d = c.dark, b = c.belly, i = c.inner, bl = c.blush, eye = '#4A3440';
+  return `<svg class="cat-art" viewBox="0 0 220 200" width="100%" height="100%">
+<g class="catTail"><path d="M176 112 Q216 114 208 78 Q204 58 186 60 Q172 62 174 74 Q176 86 188 84" fill="none" stroke="${m}" stroke-width="15" stroke-linecap="round"/><path d="M193 73 Q188 84 182 80" fill="none" stroke="${d}" stroke-width="14" stroke-linecap="round" opacity=".55"/></g>
+<g class="catEar catEarL"><path d="M40 62 Q34 20 64 16 Q82 13 92 28 L78 50 Q62 56 50 64 Z" fill="${m}" stroke="${d}" stroke-width="4" stroke-linejoin="round"/><path d="M54 46 Q52 28 68 27 Q78 27 80 37 L70 48 Q62 50 54 46 Z" fill="${i}"/></g>
+<g class="catEar catEarR"><path d="M180 62 Q186 20 156 16 Q138 13 128 28 L142 50 Q158 56 170 64 Z" fill="${m}" stroke="${d}" stroke-width="4" stroke-linejoin="round"/><path d="M166 46 Q168 28 152 27 Q142 27 140 37 L150 48 Q158 50 166 46 Z" fill="${i}"/></g>
+<ellipse class="catBodyG" cx="110" cy="116" rx="86" ry="78" fill="${m}" stroke="${d}" stroke-width="5"/>
+<ellipse cx="110" cy="144" rx="56" ry="44" fill="${b}"/>
+<g class="catLeg catLegL"><ellipse cx="68" cy="188" rx="23" ry="15" fill="${m}" stroke="${d}" stroke-width="4"/></g>
+<g class="catLeg catLegR"><ellipse cx="152" cy="188" rx="23" ry="15" fill="${m}" stroke="${d}" stroke-width="4"/></g>
+<g class="catPaws"><ellipse cx="86" cy="176" rx="18" ry="13" fill="${m}" stroke="${d}" stroke-width="3.5"/><ellipse cx="134" cy="176" rx="18" ry="13" fill="${m}" stroke="${d}" stroke-width="3.5"/></g>
+<g class="catStripe" fill="none" stroke="${d}" stroke-width="5" stroke-linecap="round" opacity=".75"><path d="M84 42 Q96 55 108 42"/><path d="M112 42 Q124 55 136 42"/><path d="M62 78 L78 86"/><path d="M158 78 L142 86"/></g>
+<g class="catWhisker" stroke="#D9B8A8" stroke-width="3" stroke-linecap="round" opacity=".85"><path d="M26 94 L60 100"/><path d="M26 116 L58 112"/><path d="M194 94 L160 100"/><path d="M194 116 L162 112"/></g>
+<g class="catEyeG catEyeOpen"><ellipse cx="76" cy="88" rx="14" ry="17" fill="${eye}"/><ellipse cx="144" cy="88" rx="14" ry="17" fill="${eye}"/><circle cx="71" cy="81" r="5" fill="#fff"/><circle cx="83" cy="93" r="2.6" fill="#fff"/><circle cx="139" cy="81" r="5" fill="#fff"/><circle cx="151" cy="93" r="2.6" fill="#fff"/></g>
+<g class="catEyeG catEyeHappy" style="display:none"><path d="M62 92 Q76 74 90 92" fill="none" stroke="${eye}" stroke-width="6" stroke-linecap="round"/><path d="M130 92 Q144 74 158 92" fill="none" stroke="${eye}" stroke-width="6" stroke-linecap="round"/></g>
+<g class="catEyeG catEyeSad" style="display:none"><ellipse cx="76" cy="92" rx="10" ry="12" fill="${eye}"/><ellipse cx="144" cy="92" rx="10" ry="12" fill="${eye}"/><circle cx="72" cy="87" r="3.6" fill="#fff"/><circle cx="140" cy="87" r="3.6" fill="#fff"/><path d="M60 66 L92 75" stroke="${d}" stroke-width="5" stroke-linecap="round"/><path d="M160 66 L128 75" stroke="${d}" stroke-width="5" stroke-linecap="round"/></g>
+<g class="catBlush"><ellipse cx="50" cy="110" rx="13" ry="9" fill="${bl}" opacity=".75"/><ellipse cx="170" cy="110" rx="13" ry="9" fill="${bl}" opacity=".75"/></g>
+<path class="catNose" d="M103 106 Q110 101 117 106 L110 115 Z" fill="#F28A99"/>
+<g class="catMouthG catMouthOpen"><path d="M92 114 Q92 142 110 142 Q128 142 128 114 Q119 122 110 122 Q101 122 92 114 Z" fill="#8C4A50"/><ellipse cx="110" cy="134" rx="7" ry="4.5" fill="#FFA3A3"/></g>
+<g class="catMouthG catMouthClose" style="display:none"><path d="M98 120 Q110 132 122 120" fill="none" stroke="#8C4A50" stroke-width="5" stroke-linecap="round"/></g>
+<g class="catMouthG catMouthSad" style="display:none"><ellipse cx="110" cy="124" rx="8" ry="6.5" fill="#8C4A50"/></g>
+<g class="catTear" style="display:none"><path d="M76 101 Q70 113 79 115 Q87 113 82 101 Q80 99 76 101 Z" fill="#A5D8FF"/><path d="M144 101 Q138 113 147 115 Q155 113 150 101 Q148 99 144 101 Z" fill="#A5D8FF"/></g>
+</svg>`;
+}
+
+function itemIcon(k) {
+  if (k === 'magnet') return `<svg viewBox="0 0 60 60"><rect x="6" y="4" width="15" height="12" rx="5" fill="#E85D75" stroke="#C63A58" stroke-width="3"/><rect x="39" y="4" width="15" height="12" rx="5" fill="#E85D75" stroke="#C63A58" stroke-width="3"/><path d="M13.5 15 L13.5 40 Q13.5 57 30 57 Q46.5 57 46.5 40 L46.5 15" fill="none" stroke="#E85D75" stroke-width="8" stroke-linecap="round"/><path d="M21 44 Q26 32 34 29 Q42 27 46 16" fill="none" stroke="#FFC9D4" stroke-width="4" stroke-linecap="round" stroke-dasharray="3 8"/></svg>`;
+  if (k === 'doubleCoin') return `<svg viewBox="0 0 60 60"><circle cx="20" cy="24" r="15" fill="#FFD24D" stroke="#E8A33D" stroke-width="3.5"/><circle cx="20" cy="24" r="9" fill="none" stroke="#FFE58A" stroke-width="2.5"/><circle cx="42" cy="38" r="15" fill="#FFD24D" stroke="#E8A33D" stroke-width="3.5"/><circle cx="42" cy="38" r="9" fill="none" stroke="#FFE58A" stroke-width="2.5"/><text x="42" y="44" font-family="Arial,sans-serif" font-size="16" font-weight="900" text-anchor="middle" fill="#B5792A">2</text></svg>`;
+  return `<svg viewBox="0 0 60 60"><path d="M30 52 C 12 40 8 23 18 14 C 27 6 33 12 30 20 C 27 12 33 6 42 14 C 52 23 48 40 30 52 Z" fill="#FF7B93" stroke="#E85D75" stroke-width="3.5" stroke-linejoin="round"/><path d="M22 28 H38 M30 20 V36" stroke="#fff" stroke-width="6" stroke-linecap="round"/></svg>`;
+}
+
+function heartsHTML(n) {
+  let html = '';
+  const count = Math.max(n, 3);
+  for (let i = 0; i < count; i++) {
+    const lost = i >= n;
+    html += `<svg class="heart${lost ? ' lost' : ''}" viewBox="0 0 24 24" width="19" height="19"><path d="M12 21 C4 15 2 9 6 5.6 C10 2.4 12 6 12 6 C12 6 14 2.4 18 5.6 C22 9 20 15 12 21 Z" fill="${lost ? '#D9C4CB' : '#FF6B81'}" stroke="${lost ? '#C9B4BB' : '#E85D75'}" stroke-width="1.4"/></svg>`;
+  }
+  return html;
+}
+
+/* ================= 全局状态 ================= */
+const G = { running: false, paused: false, over: false, raf: 0, lastTs: 0, dt: 0, catX: 0, catTargetX: 0, catSpeed: 0, score: 0, lives: 3, time: 0, coins: 0, spawnAcc: 0, snacks: [], magnetT: 0, doubleOn: false, doubleTag: 0, earnedFinal: 0, oldBest: 0 };
+const Geo = { w: 0, h: 0, groundY: 0 };
+//__JS_A2__/* ================= 应用状态 ================= */
+const app = { user: null, audio: null, soundOn: true };
+function getUser() { return app.user; }
+function saveUser() {
+  const us = Store.loadUsers();
+  us[app.user.id] = app.user;
+  Store.saveUsers(us);
+}
+
+/* ================= Toast ================= */
+let toastTimer = null;
+function toast(msg) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 1900);
+}
+
+/* ================= Modal ================= */
+function showModal(id) { $('#' + id).classList.add('show'); }
+function hideModal(id) { $('#' + id).classList.remove('show'); }
+
+/* ================= 音效（WebAudio 合成，无需外部资源） ================= */
+function ensureAudio() {
+  if (app.audio || !(window.AudioContext || window.webkitAudioContext)) return;
+  try { app.audio = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { app.audio = null; }
+}
+function sfx(kind) {
+  if (!app.soundOn) return;
+  const ctx = app.audio; if (!ctx) return;
+  if (ctx.state === 'suspended') ctx.resume();
+  const t = ctx.currentTime;
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = 'triangle';
+  if (kind === 'eat') { o.frequency.setValueAtTime(520, t); o.frequency.exponentialRampToValueAtTime(880, t + .09); g.gain.setValueAtTime(.16, t); g.gain.exponentialRampToValueAtTime(.001, t + .16); }
+  else if (kind === 'coin') { o.type = 'square'; o.frequency.setValueAtTime(660, t); o.frequency.setValueAtTime(990, t + .09); g.gain.setValueAtTime(.07, t); g.gain.exponentialRampToValueAtTime(.001, t + .18); }
+  else if (kind === 'miss') { o.type = 'sine'; o.frequency.setValueAtTime(300, t); o.frequency.exponentialRampToValueAtTime(140, t + .24); g.gain.setValueAtTime(.15, t); g.gain.exponentialRampToValueAtTime(.001, t + .28); }
+  else if (kind === 'buy') { o.type = 'triangle'; o.frequency.setValueAtTime(523, t); o.frequency.setValueAtTime(784, t + .08); g.gain.setValueAtTime(.12, t); g.gain.exponentialRampToValueAtTime(.001, t + .2); }
+  else if (kind === 'over') { o.type = 'sawtooth'; o.frequency.setValueAtTime(392, t); o.frequency.setValueAtTime(311, t + .2); o.frequency.setValueAtTime(262, t + .4); g.gain.setValueAtTime(.12, t); g.gain.exponentialRampToValueAtTime(.001, t + .6); }
+  else if (kind === 'click') { o.frequency.setValueAtTime(740, t); g.gain.setValueAtTime(.07, t); g.gain.exponentialRampToValueAtTime(.001, t + .07); }
+  else if (kind === 'sign') { o.frequency.setValueAtTime(523, t); o.frequency.setValueAtTime(659, t + .09); o.frequency.setValueAtTime(784, t + .18); g.gain.setValueAtTime(.12, t); g.gain.exponentialRampToValueAtTime(.001, t + .34); }
+  else if (kind === 'win') { o.frequency.setValueAtTime(523, t); o.frequency.setValueAtTime(659, t + .12); o.frequency.setValueAtTime(784, t + .24); o.frequency.setValueAtTime(1047, t + .36); g.gain.setValueAtTime(.13, t); g.gain.exponentialRampToValueAtTime(.001, t + .5); }
+  else return;
+  o.connect(g); g.connect(ctx.destination);
+  o.start(t); o.stop(t + .8);
+}
+
+/* ================= 账号系统 ================= */
+function newUser(id, nick, pass) {
+  return { id: id, nick: nick, pass: pass || '', guest: !pass, coins: 200, best: 0, totalEarned: 0, chars: ['orange'], cur: 'orange', items: { magnet: 0, doubleCoin: 0, extraLife: 0 }, lastSign: '', streak: 0, created: Date.now() };
+}
+function enterApp(u) {
+  app.user = u;
+  app.soundOn = u.sound !== false;
+  ensureAudio();
+  $('#loginPage').classList.remove('show');
+  $('#appPage').classList.add('show');
+  renderAll();
+  switchTab('home');
+}
+function guestLogin() {
+  ensureAudio();
+  const id = uid();
+  const u = newUser(id, '小猫' + randInt(1000, 9999), '');
+  const us = Store.loadUsers(); us[id] = u;
+  Store.saveUsers(us); Store.setSession(id);
+  enterApp(u);
+  toast('欢迎新玩家 ' + u.nick + '！已送 200 金币 🎉');
+}
+function logout() {
+  Store.setSession('');
+  app.user = null;
+  if (G.running) { G.running = false; cancelAnimationFrame(G.raf); }
+  $('#snackLayer').innerHTML = '';
+  $('#fxLayer').innerHTML = '';
+  ['pauseModal', 'resultModal', 'itemModal', 'acctModal', 'nickModal', 'passModal', 'confirmModal', 'cloudModal'].forEach(m => hideModal(m));
+  $('#gamePage').classList.remove('show');
+  $('#appPage').classList.remove('show');
+  $('#loginPage').classList.add('show');
+}
+
+let acctMode = 'login';
+function setAcctMode(m) {
+  acctMode = m;
+  $('#acctTitle').textContent = m === 'login' ? '登录账号' : '注册账号';
+  $('#acctOk').textContent = m === 'login' ? '登 录' : '注 册';
+  $('#acctPass2').style.display = m === 'login' ? 'none' : '';
+  $('#segLogin').classList.toggle('active', m === 'login');
+  $('#segReg').classList.toggle('active', m === 'reg');
+  $('#acctErr').textContent = '';
+  const tip = $('#acctTip');
+  if (tip) tip.textContent = m === 'login'
+    ? '还没有账号？输入新账号，点「登 录」即自动进入注册'
+    : '注册新账号：账号 2-16 位 · 密码 4-16 位';
+}
+function openAcct() {
+  $('#acctUser').value = ''; $('#acctPass').value = ''; $('#acctPass2').value = ''; $('#acctErr').textContent = '';
+  setAcctMode('login');
+  showModal('acctModal');
+}
+
+/* ================= Tab 切换 ================= */
+function switchTab(name) {
+  sfx('click');
+  $$('.tab-page').forEach(p => p.classList.remove('active'));
+  $('#tab' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
+  $$('.nav-item').forEach(n => n.classList.toggle('active', n.dataset.tab === name));
+  if (name === 'home') renderHome();
+  else if (name === 'char') renderChars();
+  else if (name === 'shop') renderShop();
+  else renderMe();
+}
+
+/* ================= 首页 & 每日签到 ================= */
+function signReward(day) { return Math.min(50 + (day - 1) * 15, 200); }
+function renderHome() {
+  const u = getUser();
+  $('#homeAvatar').innerHTML = catSVG(CHAR_MAP[u.cur].colors);
+  $('#homeNick').textContent = u.nick;
+  $('#homeId').textContent = 'ID: ' + u.id;
+  $('#homeCoins').textContent = u.coins;
+  $('#homeBest').textContent = u.best;
+  $('#homeCat').innerHTML = catSVG(CHAR_MAP[u.cur].colors);
+  $('#homeCatName').textContent = CHAR_MAP[u.cur].name;
+  const btn = $('#signBtn');
+  if (u.lastSign === todayStr()) {
+    btn.classList.add('disabled');
+    btn.textContent = '✅ 今日已签到 · 连续 ' + u.streak + ' 天';
+  } else {
+    btn.classList.remove('disabled');
+    const nxt = u.lastSign === yesterdayStr() ? u.streak + 1 : 1;
+    btn.textContent = '🎁 每日签到 · 连签' + nxt + '天可领 ' + signReward(nxt) + ' 金币';
+    btn.onclick = doSign;
+  }
+}
+function doSign() {
+  const u = getUser();
+  if (u.lastSign === todayStr()) { toast('今天已经签到过啦'); return; }
+  const streak = u.lastSign === yesterdayStr() ? u.streak + 1 : 1;
+  u.streak = streak;
+  u.lastSign = todayStr();
+  const r = signReward(streak);
+  u.coins += r;
+  saveUser();
+  renderHome();
+  sfx('sign');
+  toast('签到成功！连续第 ' + streak + ' 天，+ ' + r + ' 金币 🎉');
+}
+
+/* ================= 角色页 ================= */
+function renderChars() {
+  const u = getUser();
+  const box = $('#charList');
+  box.innerHTML = '';
+  CHARS.forEach(c => {
+    const owned = u.chars.includes(c.id);
+    const cur = u.cur === c.id;
+    const card = document.createElement('div');
+    card.className = 'char-card' + (cur ? ' current' : '');
+    let right = '';
+    if (cur) right = '<div class="char-tag cur">使用中</div>';
+    else if (owned) right = '<div class="char-tag got">已拥有 · 点击使用</div>';
+    else right = '<div class="char-price">🪙 ' + c.price + '</div>';
+    card.innerHTML = `<div class="char-pic">${catSVG(c.colors)}</div><div class="char-name">${c.name}</div>${right}`;
+    card.addEventListener('click', () => {
+      if (cur) { toast(c.name + ' 正在出战哦'); return; }
+      if (owned) {
+        u.cur = c.id; saveUser(); renderChars(); renderHome();
+        sfx('buy');
+        toast('已切换出战：' + c.name);
+      } else if (u.coins >= c.price) {
+        u.coins -= c.price; u.chars.push(c.id); u.cur = c.id;
+        saveUser(); renderChars(); renderHome(); renderMe();
+        sfx('buy');
+        toast('解锁新角色：' + c.name + '！');
+      } else toast('金币不够哦，先去玩几局吧');
+    });
+    box.appendChild(card);
+  });
+}
+
+/* ================= 商店页 ================= */
+function renderShop() {
+  const u = getUser();
+  const box = $('#shopList');
+  box.innerHTML = '';
+  Object.keys(ITEMS).forEach(k => {
+    const it = ITEMS[k];
+    const have = u.items[k] || 0;
+    const card = document.createElement('div');
+    card.className = 'shop-card';
+    card.innerHTML = `<div class="shop-icon" style="--ic:${it.color}">${itemIcon(k)}</div>
+<div class="shop-info"><div class="shop-name">${it.name}</div><div class="shop-desc">${it.desc}</div></div>
+<div class="shop-right">${have ? '<div class="shop-have">背包 ×' + have + '</div>' : ''}<button class="btn btn-primary btn-sm">🪙 ${it.price}</button></div>`;
+    card.querySelector('button').addEventListener('click', () => {
+      if (u.coins >= it.price) {
+        u.coins -= it.price;
+        u.items[k] = (u.items[k] || 0) + 1;
+        saveUser(); renderShop(); renderHome();
+        sfx('buy');
+        toast('购入 ' + it.name + ' ×1，已存入背包');
+      } else toast('金币不够哦，先去赚点金币吧');
+    });
+    box.appendChild(card);
+  });
+}
+
+/* ================= 我的页 ================= */
+function renderMe() {
+  const u = getUser();
+  $('#meAvatar').innerHTML = catSVG(CHAR_MAP[u.cur].colors);
+  $('#meNick').textContent = u.nick;
+  $('#meUid').textContent = '账号ID：' + u.id;
+  $('#statBest').textContent = u.best;
+  $('#statTotal').textContent = u.totalEarned;
+  $('#statStreak').textContent = u.streak;
+  $('#soundBtn').textContent = app.soundOn ? '🔊 音效：开' : '🔇 音效：关';
+  renderCloudStatus();
+  renderStoreDiag();
+}
+function cloudStateText(cfg) {
+  if (cfg.status === 'ok' && cfg.lastSync) return '已自动备份（' + fmtDate(new Date(cfg.lastSync)) + '）';
+  if (cfg.status === 'err') return cfg.url ? '自定义接口连接失败，请到设置中检查地址' : '默认匿名云端暂不可达（多为网络限制）· 已存本地';
+  if (cfg.url) return '待同步';
+  return '开通中…';
+}
+function renderCloudStatus() {
+  const el = $('#cloudState'); if (!el) return;
+  const cfg = Store.loadCloudCfg();
+  if (cfg.status === 'ok' && cfg.lastSync) {
+    el.textContent = '☁️ 已云备份 ' + pad(new Date(cfg.lastSync).getHours()) + ':' + pad(new Date(cfg.lastSync).getMinutes());
+    el.style.color = '#3E9A63';
+  } else if (cfg.status === 'err') {
+    el.textContent = '☁️ 云备份暂不可用·已存本地';
+    el.style.color = '#E56A8A';
+  } else if (cfg.url) {
+    el.textContent = '☁️ 云备份待同步';
+    el.style.color = '#5AA9E6';
+  } else {
+    el.textContent = '☁️ 云备份开通中…';
+    el.style.color = '#5AA9E6';
+  }
+}
+/* 存储与云端自诊断：一眼看出数据为什么"没了" */
+function renderStoreDiag() {
+  const el = $('#storeDiag'); if (!el) return;
+  const us = Store.loadUsers();
+  const cnt = Object.keys(us).length;
+  const sid = Store.getSession();
+  let html = '';
+  if (Store.lsOk) {
+    html += '<div class="diag-row ok">✅ 浏览器存储正常 · 本地 ' + cnt + ' 个账号' + (sid && us[sid] ? '（当前：' + us[sid].nick + '）' : '') + '</div>';
+  } else {
+    html += '<div class="diag-row bad">⚠️ 浏览器存储不可用——当前打开方式下数据无法保存。请用「本地服务器」或「固定网址」方式打开游戏（见交付说明）。</div>';
+  }
+  html += '<div class="diag-row">☁️ 云端：' + cloudStateText(Store.loadCloudCfg()) + '</div>';
+  html += '<div class="diag-row">📌 你的账号数据保存在浏览器的存储里，不随文件移动。换设备 / 换浏览器 / 文件更新前，请先「导出存档」，之后「导入恢复」即可找回全部账号。</div>';
+  el.innerHTML = html;
+}
+/* 本地存档导出 / 导入（100% 本地兜底，不依赖任何云端） */
+function exportBackupData() {
+  return JSON.stringify({ app: 'snackCat', v: 2, exportedAt: Date.now(), users: Store.loadUsers(), session: Store.getSession(), cloudCfg: Store.loadCloudCfg() }, null, 1);
+}
+function exportBackup() {
+  const text = exportBackupData();
+  try {
+    const nick = (typeof getUser === 'function' && getUser() && getUser().nick) || '存档';
+    const blob = new Blob([text], { type: 'application/json' });
+    const url = (window.URL || window.webkitURL).createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '小猫接零食-备份-' + nick + '-' + new Date().toISOString().slice(0, 10) + '.json';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      try { (window.URL || window.webkitURL).revokeObjectURL(url); } catch (e) { }
+      if (a.parentNode) a.parentNode.removeChild(a);
+    }, 400);
+    sfx('click');
+    toast('存档已导出 ✅ 请妥善保存该文件');
+  } catch (e) {
+    cfmCb = null;
+    $('#cfmTitle').textContent = '手动备份（复制并保存以下内容）';
+    $('#cfmText').textContent = text;
+    showModal('confirmModal');
+    toast('当前浏览器不支持下载，请复制弹窗内容保存');
+  }
+}
+function importBackup(text) {
+  let data = null;
+  try { data = JSON.parse(text); } catch (e) { toast('备份文件无法解析，请确认是导出的存档文件'); return; }
+  if (!data || data.app !== 'snackCat' || !data.users || typeof data.users !== 'object') {
+    toast('不是有效的《小猫接零食》存档备份'); return;
+  }
+  const cnt = Object.keys(data.users).length;
+  if (cnt === 0) { toast('备份中没有任何账号'); return; }
+  const base = { coins: 200, best: 0, totalEarned: 0, chars: ['orange'], cur: 'orange', items: { magnet: 0, doubleCoin: 0, extraLife: 0 }, lastSign: '', streak: 0, created: 0 };
+  for (const k in data.users) {
+    const u = data.users[k];
+    if (!u || typeof u !== 'object') { delete data.users[k]; continue; }
+    for (const f in base) { if (typeof u[f] === 'undefined') u[f] = JSON.parse(JSON.stringify(base[f])); }
+    if (!u.items || typeof u.items !== 'object') u.items = { magnet: 0, doubleCoin: 0, extraLife: 0 };
+    if (!Array.isArray(u.chars) || !u.chars.length) u.chars = ['orange'];
+    if (!u.id) u.id = k;
+  }
+  cfmCb = () => {
+    Store.memUsers = data.users;
+    try { localStorage.setItem(Store.KEY_USERS, JSON.stringify(data.users)); } catch (e) { Store.lsOk = false; }
+    if (typeof data.session === 'string' && data.session && data.users[data.session]) Store.setSession(data.session);
+    else Store.setSession('');
+    const cc = data.cloudCfg && typeof data.cloudCfg === 'object' ? data.cloudCfg : {};
+    if (cc.url && /^https?:\/\//.test(cc.url)) {
+      const cfg = Store.loadCloudCfg();
+      cfg.url = cc.url; cfg.token = cc.token || ''; cfg.status = '';
+      Store.saveCloudCfg(cfg);
+    }
+    Store.syncCloud(Store.loadUsers());
+    const sid = Store.getSession();
+    const u = sid && data.users[sid] ? data.users[sid] : data.users[Object.keys(data.users)[0]];
+    ensureAudio();
+    enterApp(u);
+    Store.setSession(u.id);
+    renderAll();
+    toast('存档恢复成功：' + u.nick + ' 👏');
+  };
+  $('#cfmTitle').textContent = '恢复存档备份';
+  $('#cfmText').textContent = '检测到备份包含 ' + cnt + ' 个账号；恢复后将覆盖本地现有存档' + (data.users[data.session] ? '（含当前账号「' + data.users[data.session].nick + '」）' : '（当前会话账号不在备份中，将登录备份里第一个账号）') + '。是否继续？';
+  showModal('confirmModal');
+}
+function handleBackupFile(evt) {
+  const f = evt.target && evt.target.files && evt.target.files[0];
+  if (!f) return;
+  const rd = new FileReader();
+  rd.onload = () => importBackup(String(rd.result || ''));
+  rd.onerror = () => toast('读取备份文件失败，请重试');
+  rd.readAsText(f);
+  evt.target.value = '';
+}
+/* 会话自动恢复：localStorage 中留有会话则直接进入游戏，无需重新登录 */
+function tryAutoLogin() {
+  const sid = Store.getSession();
+  if (!sid) return false;
+  const us = Store.loadUsers();
+  if (us[sid]) { enterApp(us[sid]); return true; }
+  Store.setSession('');
+  return false;
+}
+function openCloud() {
+  const cfg = Store.loadCloudCfg();
+  $('#cloudUrl').value = cfg.url ? cfg.url : '';
+  $('#cloudToken').value = cfg.token || '';
+  $('#cloudErr').textContent = '';
+  $('#cloudHint').textContent = cfg.url
+    ? (cfg.lastSync ? '上次成功云备份：' + fmtDate(new Date(cfg.lastSync)) + '。清空地址可切回默认匿名云端。' : '已接入云端，正在自动同步。')
+    : '已默认开通 jsonblob 匿名云端自动备份，无需注册，每次存档变更自动同步；也可在此填自定义接口（GET/PUT JSON、允许 CORS、支持公网访问）覆盖默认云端。云端为公共匿名空间，勿放敏感信息；若云端不可用，请用「我的 → 导出存档」做文件备份。';
+  showModal('cloudModal');
+}
+
+/* ================= 分享链接（存档编码进 URL，可跨设备恢复） ================= */
+let cfmCb = null;
+function shareEncode(u) {
+  const slim = { id: u.id, nick: u.nick, coins: u.coins, best: u.best, totalEarned: u.totalEarned, cur: u.cur || 'orange' };
+  if (u.chars) slim.chars = u.chars;
+  if (u.items) slim.items = u.items;
+  if (u.lastSign) slim.lastSign = u.lastSign;
+  if (u.streak) slim.streak = u.streak;
+  if (u.created) slim.created = u.created;
+  let b64 = '';
+  try { b64 = btoa(String.fromCharCode.apply(null, new TextEncoder().encode(JSON.stringify(slim)))); }
+  catch (e) { b64 = btoa(unescape(encodeURIComponent(JSON.stringify(slim)))); }
+  return 'v1.' + b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function shareDecode(s) {
+  const parts = (s || '').split('.');
+  if (parts.length !== 2 || parts[0] !== 'v1') return null;
+  let b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+  while (b64.length % 4) b64 += '=';
+  let json = '';
+  try {
+    const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    json = new TextDecoder().decode(bytes);
+  } catch (e) {
+    try { json = decodeURIComponent(escape(atob(b64))); } catch (e2) { return null; }
+  }
+  try {
+    const o = JSON.parse(json);
+    if (!o || !o.id || typeof o.id !== 'string') return null;
+    return o;
+  } catch (e) { return null; }
+}
+function b64url(s) {
+  let b = '';
+  try { b = btoa(String.fromCharCode.apply(null, new TextEncoder().encode(s))); }
+  catch (e) { b = btoa(unescape(encodeURIComponent(s))); }
+  return b.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function shareLink() {
+  let extra = '';
+  const cfg = Store.loadCloudCfg();
+  if (cfg.url) extra = '&cloud=' + b64url(cfg.url);
+  return location.href.split('#')[0] + '#share=' + shareEncode(getUser()) + extra;
+}
+function copyShareLink() {
+  const link = shareLink();
+  const done = () => toast('分享链接已复制 ✅');
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(link).then(done).catch(() => fallbackCopy(link, done));
+  } else fallbackCopy(link, done);
+}
+function fallbackCopy(text, done) {
+  const ta = document.createElement('textarea');
+  ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  try { document.execCommand('copy'); ta.remove(); done(); }
+  catch (e) {
+    ta.remove();
+    cfmCb = null;
+    $('#cfmTitle').textContent = '自动复制失败，请手动复制链接';
+    $('#cfmText').textContent = text;
+    showModal('confirmModal');
+  }
+}
+function tryRestoreShare() {
+  const m = location.hash.match(/share=([\w.-]+?)(?:&|$)/);
+  if (!m) return;
+  const data = shareDecode(m[1]);
+  if (!data) return;
+  const cm = location.hash.match(/[?&]cloud=([\w-]+)/);
+  let cloudUrl = '';
+  if (cm) {
+    try {
+      let bb = cm[1].replace(/-/g, '+').replace(/_/g, '/');
+      while (bb.length % 4) bb += '=';
+      let json = '';
+      try {
+        const bytes = Uint8Array.from(atob(bb), c => c.charCodeAt(0));
+        json = new TextDecoder().decode(bytes);
+      } catch (e) {
+        try { json = decodeURIComponent(escape(atob(bb))); } catch (e2) { json = ''; }
+      }
+      if (json && /^https?:\/\//.test(json)) cloudUrl = json;
+    } catch (e) { cloudUrl = ''; }
+  }
+  cfmCb = () => {
+    const us = Store.loadUsers();
+    const old = us[data.id];
+    data.pass = old && old.pass ? old.pass : (data.pass || '');
+    data.guest = !data.pass;
+    data.created = old ? old.created : (data.created || Date.now());
+    us[data.id] = data;
+    Store.saveUsers(us);
+    Store.setSession(data.id);
+    if (cloudUrl) { const cfg = Store.loadCloudCfg(); cfg.url = cloudUrl; cfg.status = ''; Store.saveCloudCfg(cfg); }
+    ensureAudio();
+    enterApp(data);
+    try { location.hash = ''; } catch (e) { }
+    toast(cloudUrl ? '分享存档已恢复，云端同步已接续：' + data.nick : '分享存档已恢复：' + data.nick);
+  };
+  $('#cfmTitle').textContent = '收到分享存档';
+  $('#cfmText').textContent = '检测到账号「' + data.nick + '」的分享存档（金币 ' + data.coins + ' · 最高分 ' + data.best + '），是否恢复？';
+  showModal('confirmModal');
+}
+function renderAll() { renderHome(); renderChars(); renderShop(); renderMe(); }
+
+/* ================= 改昵称 / 密码 ================= */
+function openNick() {
+  $('#nickInput').value = ''; $('#nickErr').textContent = '';
+  showModal('nickModal');
+}
+function openPass() {
+  $('#pass1').value = ''; $('#pass2').value = ''; $('#passErr').textContent = '';
+  showModal('passModal');
+}
+//__JS_B2__/* ================= 游戏常量 ================= */
+const GROUND_H = 84;
+function snackW() { return Math.min(60, Math.max(46, Geo.w * 0.125)); }
+function catSize() { return Math.min(150, Math.max(110, Geo.w * 0.34)); }
+function geo() {
+  const r = $('#phone').getBoundingClientRect();
+  Geo.w = r.width; Geo.h = r.height;
+  Geo.groundY = Geo.h - GROUND_H;
+}
+function placeCat() {
+  const el = $('#catBox');
+  const w = catSize();
+  el.style.width = w + 'px';
+  el.style.height = (w * 200 / 220) + 'px';
+  el.style.bottom = (GROUND_H - 8) + 'px';
+}
+function drawCat() { $('#catBox').innerHTML = catSVG(CHAR_MAP[getUser().cur].colors); }
+
+/* ================= 开始流程（道具选择 → 开局） ================= */
+function startFlow() {
+  const u = getUser();
+  const has = Object.keys(u.items).some(k => (u.items[k] || 0) > 0);
+  if (has) openItemModal(); else beginGame({});
+}
+let selItems = {};
+function openItemModal() {
+  const u = getUser();
+  selItems = {};
+  const box = $('#itemList');
+  box.innerHTML = '';
+  Object.keys(ITEMS).forEach(k => {
+    const it = ITEMS[k];
+    const n = u.items[k] || 0;
+    if (!n) return;
+    const card = document.createElement('div');
+    card.className = 'item-pick';
+    card.innerHTML = `<div class="ip-icon">${itemIcon(k)}</div><div class="ip-txt"><b>${it.name}</b><span>背包 ×${n} · ${it.desc}</span></div><div class="ip-check">✓</div>`;
+    card.addEventListener('click', () => {
+      selItems[k] = !selItems[k];
+      card.classList.toggle('on', !!selItems[k]);
+      sfx('buy');
+    });
+    box.appendChild(card);
+  });
+  showModal('itemModal');
+}
+function beginGame(items) {
+  const u = getUser();
+  Object.keys(items || {}).forEach(k => { if (items[k] && (u.items[k] || 0) > 0) u.items[k]--; });
+  saveUser();
+  G.score = 0; G.lives = 3; G.time = 0; G.coins = 0; G.spawnAcc = 0;
+  G.snacks = []; G.magnetT = 0; G.doubleOn = false; G.doubleTag = 0; G.over = false; G.paused = false;
+  if (items && items.magnet) G.magnetT = 10;
+  if (items && items.doubleCoin) { G.doubleOn = true; G.doubleTag = 3; }
+  if (items && items.extraLife) G.lives = 4;
+  $('#snackLayer').innerHTML = '';
+  $('#fxLayer').innerHTML = '';
+  $('#appPage').classList.remove('show');
+  $('#gamePage').classList.add('show');
+  geo();
+  G.catX = Geo.w / 2; G.catTargetX = G.catX;
+  placeCat();
+  drawCat();
+  updateHud();
+  updateItemTag();
+  G.running = true;
+  G.lastTs = 0;
+  cancelAnimationFrame(G.raf);
+  requestAnimationFrame(loop);
+}
+
+/* ================= 触摸控制（手指左右滑动） ================= */
+function catMin() { return catSize() / 2; }
+function catMax() { return Geo.w - catSize() / 2; }
+function setTarget(cx) {
+  const r = $('#gameScene').getBoundingClientRect();
+  G.catTargetX = clamp(cx - r.left, catMin(), catMax());
+}
+let catBoxEl = null;
+(function bindTouch() {
+  catBoxEl = $('#catBox');
+  const sc = $('#gameScene');
+  sc.addEventListener('touchstart', e => { if (!G.running || G.paused) return; e.preventDefault(); setTarget(e.touches[0].clientX); }, { passive: false });
+  sc.addEventListener('touchmove', e => { if (!G.running || G.paused) return; e.preventDefault(); setTarget(e.touches[0].clientX); }, { passive: false });
+  let mDown = false;
+  sc.addEventListener('mousedown', e => { if (!G.running || G.paused) return; mDown = true; e.preventDefault(); setTarget(e.clientX); });
+  window.addEventListener('mousemove', e => { if (mDown && G.running && !G.paused) setTarget(e.clientX); });
+  window.addEventListener('mouseup', () => { mDown = false; });
+})();
+
+/* ================= 零食生成 / 碰撞 ================= */
+function spawnSnack() {
+  const key = pickSnack();
+  const el = document.createElement('div');
+  el.className = 'snack';
+  el.innerHTML = SNACKS[key].svg();
+  $('#snackLayer').appendChild(el);
+  const w = snackW();
+  const baseSpeed = Math.min(640, 225 + G.time * 7.5);
+  G.snacks.push({
+    el: el, key: key, w: w,
+    x: rand(16 + w / 2, Geo.w - 16 - w / 2),
+    y: -38,
+    vy: baseSpeed * rand(0.92, 1.15),
+    swing: rand(0, Math.PI * 2),
+    swAmp: rand(0.5, 1.4),
+    rot: rand(-30, 30),
+    vrot: rand(-70, 70),
+    wob: rand(0.4, 1)
+  });
+}
+function mouthRect() {
+  const cs = catSize();
+  return { cx: G.catX, halfW: cs * 0.42, top: Geo.groundY - 8 - cs * 0.62, bottom: Geo.groundY - 8 - cs * 0.16 };
+}
+function updateCat(dt) {
+  if (!G.running || G.paused) return;
+  const prev = G.catX;
+  G.catX += (G.catTargetX - G.catX) * Math.min(1, dt * 14);
+  if (Math.abs(G.catX - G.catTargetX) < 0.6) G.catX = G.catTargetX;
+  const vx = (G.catX - prev) / Math.max(dt, 0.001);
+  const skew = clamp((vx / 500) * 5, -5, 5);
+  const box = catBoxEl;
+  // catX 即猫身中心：盒左边缘 = catX - 半宽，触点与猫中心精确对齐
+  box.style.transform = 'translate3d(' + Math.round(G.catX - catSize() / 2) + 'px,0,0) rotate(' + skew.toFixed(1) + 'deg)';
+  box.classList.toggle('catRunner', Math.abs(vx) > 60);
+  G.catSpeed = vx;
+}
+function step(dt) {
+  if (G.paused || G.over || !G.running) return;
+  G.time += dt;
+  if (G.magnetT > 0) { G.magnetT -= dt; if (G.magnetT <= 0) updateItemTag(); }
+  if (G.doubleTag > 0) { G.doubleTag -= dt; if (G.doubleTag <= 0) updateItemTag(); }
+  const interval = Math.max(0.38, 0.95 - G.time * 0.011);
+  G.spawnAcc += dt;
+  if (G.spawnAcc >= interval) {
+    G.spawnAcc = 0;
+    spawnSnack();
+    if (G.time > 45 && Math.random() < 0.5) spawnSnack();
+  }
+  updateCat(dt);
+const mr = mouthRect();
+    const hitW = mr.halfW;
+    for (let i = G.snacks.length - 1; i >= 0; i--) {
+    const s = G.snacks[i];
+    if (G.magnetT > 0 && !G.over) {
+      const dx = mr.cx - s.x, dy = (mr.bottom - 20) - s.y;
+      const dist = Math.hypot(dx, dy) || 1;
+      if (dist < 320) {
+        const pull = clamp(1.6 * (1 - dist / 320), 0.4, 1.6);
+        s.x += dx / dist * 700 * pull * dt;
+        s.y += dy / dist * 260 * pull * dt;
+      }
+    }
+    s.x += Math.sin(G.time * 2.6 + s.swing) * s.swAmp * 42 * dt * s.wob;
+    s.y += s.vy * dt;
+    s.rot += s.vrot * dt;
+    s.el.style.transform = 'translate3d(' + Math.round(s.x - s.w / 2) + 'px,' + Math.round(s.y - s.w / 2) + 'px,0) rotate(' + s.rot.toFixed(1) + 'deg)';
+    // 接取判定：零食盒与嘴巴区域相交即吃到（比点心判定更宽容、与视觉一致）
+    const sR = s.w * 0.5;
+    const inX = Math.abs(s.x - mr.cx) <= hitW + sR;
+    const inY = s.y + sR >= mr.top - 4 && s.y - sR <= mr.bottom;
+    if (inX && inY) { eatSnack(s, i); continue; }
+    if (s.y >= Geo.groundY - 16) missSnack(s, i);
+  }
+}
+function eatSnack(s, i) {
+  const sn = SNACKS[s.key];
+  G.score += sn.pts;
+  const c = randInt(sn.coins[0], sn.coins[1]);
+  G.coins += c;
+  G.snacks.splice(i, 1);
+  s.el.remove();
+  const box = catBoxEl;
+  box.classList.remove('catSad');
+  box.classList.add('catEating');
+  clearTimeout(box._eatT);
+  box._eatT = setTimeout(() => box.classList.remove('catEating'), 560);
+  fxText(s.x, s.y, '+' + sn.pts, '#FF6B81');
+  fxText(s.x + 28, s.y + 20, '+🪙' + c, '#D99A2B');
+  burst(s.x, s.y);
+  sfx('eat');
+  updateHud(true);
+}
+function missSnack(s, i) {
+  if (G.over) return;
+  G.snacks.splice(i, 1);
+  s.el.remove();
+  G.lives--;
+  updateHud();
+  const box = catBoxEl;
+  box.classList.remove('catEating');
+  box.classList.add('catSad');
+  clearTimeout(box._sadT);
+  box._sadT = setTimeout(() => box.classList.remove('catSad'), 500);
+  sfx('miss');
+  fxText(s.x, Geo.groundY - 44, '💧 漏接啦', '#8FB4D9');
+  if (G.lives <= 0) { G.lives = 0; gameOver(); }
+}
+function fxText(x, y, txt, color) {
+  const el = document.createElement('div');
+  el.className = 'fx';
+  el.style.left = x + 'px';
+  el.style.top = y + 'px';
+  el.style.color = color;
+  el.textContent = txt;
+  $('#fxLayer').appendChild(el);
+  setTimeout(() => el.remove(), 820);
+}
+function burst(x, y) {
+  const cols = ['#FFB7C5', '#FFE3A9', '#BDE3FF', '#C9F2D8'];
+  for (let i = 0; i < 5; i++) {
+    const p = document.createElement('div');
+    p.className = 'particle';
+    p.style.left = x + 'px';
+    p.style.top = y + 'px';
+    p.style.background = cols[randInt(0, 3)];
+    p.style.setProperty('--dx', rand(-42, 42) + 'px');
+    p.style.setProperty('--dy', rand(-52, -12) + 'px');
+    $('#fxLayer').appendChild(p);
+    setTimeout(() => p.remove(), 620);
+  }
+}
+function updateHud(scoreOnly) {
+  $('#hudScore').textContent = G.score;
+  $('#hudCoins').textContent = G.coins;
+  if (!scoreOnly) $('#hudLives').innerHTML = heartsHTML(G.lives);
+}
+function updateItemTag() {
+  const el = $('#itemTag');
+  const on = G.magnetT > 0 || G.doubleTag > 0;
+  if (G.magnetT > 0) el.textContent = '🧲 磁铁吸附中 ' + Math.ceil(G.magnetT) + 's';
+  else if (G.doubleTag > 0) el.textContent = '🪙 双倍金币生效中';
+  el.classList.toggle('show', on);
+}
+
+/* ================= 主循环 ================= */
+function loop(ts) {
+  if (!G.running) return;
+  if (G.paused) { G.raf = requestAnimationFrame(loop); return; }
+  if (G.lastTs) G.dt = Math.min(0.05, (ts - G.lastTs) / 1000); else G.dt = 0;
+  G.lastTs = ts;
+  if (!G.paused && !G.over) step(G.dt);
+  G.raf = requestAnimationFrame(loop);
+}
+
+/* ================= 暂停 / 结算 ================= */
+function pauseGame() {
+  if (G.over || !G.running) return;
+  G.paused = true;
+  cancelAnimationFrame(G.raf);
+  showModal('pauseModal');
+}
+function resumeGame() {
+  G.paused = false;
+  G.lastTs = 0;
+  hideModal('pauseModal');
+  G.raf = requestAnimationFrame(loop);
+}
+function quitToHome() {
+  G.running = false;
+  cancelAnimationFrame(G.raf);
+  $('#snackLayer').innerHTML = '';
+  $('#fxLayer').innerHTML = '';
+  hideModal('pauseModal'); hideModal('resultModal'); hideModal('itemModal');
+  $('#gamePage').classList.remove('show');
+  $('#appPage').classList.add('show');
+  renderAll();
+  switchTab('home');
+}
+function gameOver() {
+  if (G.over) return;
+  G.over = true;
+  G.running = false;
+  cancelAnimationFrame(G.raf);
+  const u = getUser();
+  G.earnedFinal = G.coins * (G.doubleOn ? 2 : 1);
+  G.oldBest = u.best;
+  u.coins += G.earnedFinal;
+  u.totalEarned += G.earnedFinal;
+  if (G.score > u.best) u.best = G.score;
+  saveUser();
+  sfx('over');
+  setTimeout(() => {
+    $('#resScore').textContent = G.score;
+    $('#resCoins').textContent = '+' + G.earnedFinal;
+    $('#resBest').textContent = u.best;
+    const isNew = G.score > G.oldBest && G.score > 0;
+    $('#resNew').style.display = isNew ? '' : 'none';
+    if (isNew) sfx('win');
+    showModal('resultModal');
+    renderHome(); renderMe();
+  }, 450);
+}
+
+/* ================= 初始化 ================= */
+document.addEventListener('DOMContentLoaded', () => {
+  $('#loginCat').innerHTML = catSVG(CHARS[0].colors);
+  $$('.nav-item').forEach(n => n.addEventListener('click', () => switchTab(n.dataset.tab)));
+  $('#guestBtn').addEventListener('click', () => { sfx('click'); guestLogin(); });
+  $('#acctBtn').addEventListener('click', () => { sfx('click'); openAcct(); });
+  $('#segLogin').addEventListener('click', () => setAcctMode('login'));
+  $('#segReg').addEventListener('click', () => setAcctMode('reg'));
+  $('#acctOk').addEventListener('click', () => {
+    const us = Store.loadUsers();
+    const user = $('#acctUser').value.trim();
+    const pass = $('#acctPass').value;
+    const err = m => { $('#acctErr').textContent = m; };
+    if (acctMode === 'login') {
+      if (!user) return err('请输入账号');
+      if (!us[user]) {
+        setAcctMode('reg');
+        $('#acctPass').value = '';
+        $('#acctPass2').value = '';
+        $('#acctTip').textContent = '该账号尚未注册，请设置密码完成注册';
+        if ($('#acctUser').focus) $('#acctUser').focus();
+        return err('账号「' + user + '」还没注册，已自动切换到注册，设置密码即可');
+      }
+      if (!us[user].pass) return err('该账号是游客账号（未设置密码），请点「一键开始游戏」继续，或登录后在「我的」设置密码');
+      if (us[user].pass !== pass) return err('密码不正确，请重试');
+      Store.setSession(user);
+      ensureAudio();
+      enterApp(us[user]);
+      hideModal('acctModal');
+      toast('欢迎回来 ' + us[user].nick + '！存档已同步 🎉');
+    } else {
+      if (!/^[\w\u4e00-\u9fa5]{2,16}$/.test(user)) return err('账号需2-16位，支持中文/字母/数字/下划线');
+      if (pass.length < 4 || pass.length > 16) return err('密码需4-16位');
+      if (pass !== $('#acctPass2').value) return err('两次输入的密码不一致');
+      if (us[user]) return err('该账号已被注册');
+      const u = newUser(user, user, pass);
+      us[user] = u;
+      Store.saveUsers(us); Store.setSession(user);
+      ensureAudio();
+      enterApp(u);
+      hideModal('acctModal');
+      if (!Store.lsOk) toast('浏览器存储受限，请到「我的」开启云端备份');
+      else toast('注册成功，欢迎 ' + user + '！存档已绑定账号，云端自动备份 🎉');
+    }
+  });
+  $('#nickBtn').addEventListener('click', openNick);
+  $('#nickOk').addEventListener('click', () => {
+    const v = $('#nickInput').value.trim();
+    if (!v) { $('#nickErr').textContent = '昵称不能为空'; return; }
+    if (v.length > 12) { $('#nickErr').textContent = '昵称最多12个字'; return; }
+    getUser().nick = v;
+    saveUser(); renderAll();
+    hideModal('nickModal');
+    toast('昵称已更新为：' + v);
+  });
+  $('#passBtn').addEventListener('click', openPass);
+  ['acctUser', 'acctPass', 'acctPass2'].forEach(id => {
+    $('#' + id).addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); $('#acctOk').click(); } });
+  });
+  $('#passOk').addEventListener('click', () => {
+    const p1 = $('#pass1').value, p2 = $('#pass2').value;
+    if (p1.length < 4 || p1.length > 16) { $('#passErr').textContent = '密码需4-16位'; return; }
+    if (p1 !== p2) { $('#passErr').textContent = '两次密码不一致'; return; }
+    const u = getUser();
+    u.pass = p1; u.guest = false;
+    saveUser();
+    hideModal('passModal');
+    toast('设置成功，可用「' + u.id + '」账号密码登录');
+  });
+  $('#soundBtn').addEventListener('click', () => {
+    app.soundOn = !app.soundOn;
+    getUser().sound = app.soundOn;
+    saveUser(); renderMe();
+  });
+  $('#cloudBtn').addEventListener('click', openCloud);
+  $('#backupBtn').addEventListener('click', () => { sfx('click'); exportBackup(); });
+  $('#restoreBtn').addEventListener('click', () => { sfx('click'); $('#backupFile').click(); });
+  $('#backupFile').addEventListener('change', handleBackupFile);
+  $('#cloudSave').addEventListener('click', () => {
+    const url = $('#cloudUrl').value.trim();
+    const cfg = Store.loadCloudCfg();
+    if (!url) {
+      cfg.url = ''; cfg.token = $('#cloudToken').value.trim(); cfg.status = '';
+      Store.saveCloudCfg(cfg);
+      Store.syncCloud(Store.loadUsers());
+      renderCloudStatus();
+      $('#cloudErr').textContent = '';
+      toast('已切回默认匿名云端，正在自动备份…');
+      return;
+    }
+    if (!/^https?:\/\/.+/.test(url)) { $('#cloudErr').textContent = '请输入有效的 http(s) 接口地址'; return; }
+    cfg.url = url; cfg.token = $('#cloudToken').value.trim();
+    cfg.status = '';
+    Store.saveCloudCfg(cfg);
+    $('#cloudErr').textContent = '';
+    Store.syncCloud(Store.loadUsers());
+    renderCloudStatus();
+    toast('云端配置已保存，正在上传存档…');
+  });
+  $('#cloudPull').addEventListener('click', () => {
+    const cfg = Store.loadCloudCfg();
+    if (!cfg.url) { $('#cloudErr').textContent = '云端备份尚未创建，等待自动备份完成后再试'; return; }
+    $('#cloudErr').textContent = '正在从云端下载…';
+    Store.cloudPull().then(() => {
+      const sid = Store.getSession();
+      if (sid && Store.memUsers[sid]) enterApp(Store.memUsers[sid]);
+      hideModal('cloudModal');
+      renderCloudStatus();
+      toast('云端数据已恢复 ✓');
+    }).catch(e => {
+      $('#cloudErr').textContent = '下载失败：' + (e && e.message ? e.message : '网络错误');
+    });
+  });
+  $('#shareBtn').addEventListener('click', copyShareLink);
+  $('#logoutBtn').addEventListener('click', () => {
+    cfmCb = logout;
+    $('#cfmText').textContent = '确定退出当前账号并返回登录页吗？';
+    showModal('confirmModal');
+  });
+  $('#cfmOk').addEventListener('click', () => {
+    hideModal('confirmModal');
+    if (cfmCb) { const cb = cfmCb; cfmCb = null; cb(); }
+  });
+  $$('[data-close]').forEach(b => b.addEventListener('click', () => { const m = b.closest('.modal'); if (m) m.classList.remove('show'); }));
+  $$('.modal.dismissible').forEach(m => m.addEventListener('click', e => { if (e.target === m) m.classList.remove('show'); }));
+  $('#startBtn').addEventListener('click', () => { sfx('click'); startFlow(); });
+  $('#itemGo').addEventListener('click', () => { sfx('click'); hideModal('itemModal'); beginGame(selItems); });
+  $('#itemSkip').addEventListener('click', () => { sfx('click'); hideModal('itemModal'); beginGame({}); });
+  $('#pauseBtn').addEventListener('click', () => { sfx('click'); pauseGame(); });
+  $('#resumeBtn').addEventListener('click', () => { sfx('click'); resumeGame(); });
+  $('#restartBtn').addEventListener('click', () => { sfx('click'); hideModal('pauseModal'); startFlow(); });
+  $('#quitBtn').addEventListener('click', () => { sfx('click'); quitToHome(); });
+  $('#againBtn').addEventListener('click', () => { sfx('click'); hideModal('resultModal'); startFlow(); });
+  $('#homeBtn').addEventListener('click', () => { sfx('click'); quitToHome(); });
+  tryAutoLogin();
+  tryRestoreShare();
+});</script>
+</body>
+</html>
