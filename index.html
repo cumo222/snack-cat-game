@@ -647,8 +647,9 @@ const G = { running: false, paused: false, over: false, raf: 0, lastTs: 0, dt: 0
 const Geo = { w: 0, h: 0, groundY: 0 };
 //__JS_A2__/* ================= 应用状态 ================= */
 const app = { user: null, audio: null, soundOn: true };
-function getUser() { return app.user; }
+function getUser() { return app.user || null; }
 function saveUser() {
+  if (!app.user || !app.user.id) return;
   const us = Store.loadUsers();
   us[app.user.id] = app.user;
   Store.saveUsers(us);
@@ -1136,7 +1137,11 @@ function placeCat() {
   el.style.height = (w * 200 / 220) + 'px';
   el.style.bottom = (GROUND_H - 8) + 'px';
 }
-function drawCat() { $('#catBox').innerHTML = catSVG(CHAR_MAP[getUser().cur].colors); }
+function drawCat() { 
+  const u = getUser();
+  if (!u || !u.cur) return;
+  $('#catBox').innerHTML = catSVG(CHAR_MAP[u.cur].colors); 
+}
 
 /* ================= 开始流程（道具选择 → 开局） ================= */
 function startFlow() {
@@ -1168,6 +1173,7 @@ function openItemModal() {
 }
 function beginGame(items) {
   const u = getUser();
+  if (!u) { console.error('No user logged in'); return; }
   Object.keys(items || {}).forEach(k => { if (items[k] && (u.items[k] || 0) > 0) u.items[k]--; });
   saveUser();
   G.score = 0; G.lives = 3; G.time = 0; G.coins = 0; G.spawnAcc = 0;
@@ -1344,9 +1350,12 @@ function burst(x, y) {
   }
 }
 function updateHud(scoreOnly) {
-  $('#hudScore').textContent = G.score;
-  $('#hudCoins').textContent = G.coins;
-  if (!scoreOnly) $('#hudLives').innerHTML = heartsHTML(G.lives);
+  const el = document.getElementById('hudScore');
+  if (el) el.textContent = G.score;
+  const elCoins = document.getElementById('hudCoins');
+  if (elCoins) elCoins.textContent = G.coins;
+  const elLives = document.getElementById('hudLives');
+  if (!scoreOnly && elLives) elLives.innerHTML = heartsHTML(G.lives);
 }
 function updateItemTag() {
   const el = $('#itemTag');
