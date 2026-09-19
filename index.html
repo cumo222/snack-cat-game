@@ -229,7 +229,7 @@ body{font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans S
 @keyframes lovePop{0%{opacity:0;transform:translate(-50%,6px) scale(.5)}25%{opacity:1;transform:translate(-50%,-2px) scale(1.12)}100%{opacity:0;transform:translate(-50%,-16px) scale(.9)}}
 ::-webkit-scrollbar{width:0;height:0}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabaseClient.min.js"></script>
 </head><body>
 <div id="phone" class="phone">
   <!-- ===== 登录页 ===== -->
@@ -448,13 +448,13 @@ const yesterdayStr = () => fmtDate(new Date(Date.now() - 864e5));
 const uid = () => 'snk_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 
 /* ================= Supabase 配置 ================= */
-const SUPABASE_URL = 'https://gglspvbimmljtummctmg.supabase.co';
+const SUPABASE_URL = 'https://gglspvbimmljtummctmg.supabaseClient.co';
 const SUPABASE_KEY = 'sb_publishable_14X6tu0U6QXDip5Hw9-04Q_GKnywJO9';
-let supabase = null;
+let supabaseClient = null;
 if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
-  supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 }
-let isOnline = !!supabase;
+let isOnline = !!supabaseClient;
 
 /* ================= 数据存储（本地 + Supabase 云端） ================= */
 const Store = {
@@ -566,7 +566,7 @@ async function saveUser() {
   Store.saveUsers(us);
   if (isOnline && supabase && app.user.id) {
     try {
-      await supabase.from('users').upsert([{ id: app.user.id, ...app.user, updated_at: new Date().toISOString() }], { onConflict: 'id' });
+      await supabaseClient.from('users').upsert([{ id: app.user.id, ...app.user, updated_at: new Date().toISOString() }], { onConflict: 'id' });
     } catch (e) { console.log('Supabase save failed:', e.message); }
   }
 }
@@ -627,13 +627,13 @@ async function guestLogin() {
   ensureAudio();
   if (isOnline && supabase) {
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const { data, error } = await supabaseClient.auth.signUp({
         email: 'guest_' + Date.now() + '@snackcat.local',
         password: 'guest_' + Math.random().toString(36).slice(2)
       });
       if (error) throw error;
       const gameData = newUser(data.user.id, '小猫' + randInt(1000, 9999), '');
-      await supabase.from('users').insert([{
+      await supabaseClient.from('users').insert([{
         id: data.user.id, ...gameData, created_at: new Date().toISOString()
       }]);
       Store.saveUsers({ [data.user.id]: gameData }); Store.setSession(data.user.id);
@@ -653,7 +653,7 @@ async function guestLogin() {
 }
 async function logout() {
   if (isOnline && supabase) {
-    try { await supabase.auth.signOut(); } catch (e) {}
+    try { await supabaseClient.auth.signOut(); } catch (e) {}
   }
   Store.setSession('');
   app.user = null;
@@ -895,9 +895,9 @@ function handleBackupFile(evt) {
 async function tryAutoLogin() {
   if (isOnline && supabase) {
     try {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session } } = await supabaseClient.auth.getSession();
       if (session && session.user) {
-        const { data: profile } = await supabase.from('users').select('*').eq('id', session.user.id).single();
+        const { data: profile } = await supabaseClient.from('users').select('*').eq('id', session.user.id).single();
         if (profile) {
           Store.saveUsers({ [profile.id]: profile }); Store.setSession(profile.id);
           enterApp(profile);
@@ -1319,12 +1319,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const err = m => { $('#acctErr').textContent = m; };
           if (isOnline && supabase) {
         try {
-          const { data, error } = await supabase.auth.signInWithPassword({
+          const { data, error } = await supabaseClient.auth.signInWithPassword({
             email: encodeURIComponent(user) + '@snackcat.local',
             password: pass
           });
           if (!error && data.user) {
-            const { data: profile } = await supabase.from('users').select('*').eq('id', data.user.id).single();
+            const { data: profile } = await supabaseClient.from('users').select('*').eq('id', data.user.id).single();
             if (profile) {
               Store.saveUsers({ [profile.id]: profile }); Store.setSession(profile.id);
               ensureAudio();
@@ -1359,13 +1359,13 @@ if (acctMode === 'login') {
       if (pass !== $('#acctPass2').value) return err('两次输入的密码不一致');
             if (isOnline && supabase) {
         try {
-          const { data, error } = await supabase.auth.signUp({
+          const { data, error } = await supabaseClient.auth.signUp({
             email: encodeURIComponent(user) + '@snackcat.local',
             password: pass
           });
           if (error) { console.log('Supabase register skipped:', error.message); throw error; }
           const u = newUser(data.user.id, user, pass);
-          await supabase.from('users').insert([{ id: data.user.id, ...u, created_at: new Date().toISOString() }]);
+          await supabaseClient.from('users').insert([{ id: data.user.id, ...u, created_at: new Date().toISOString() }]);
           Store.saveUsers({ [data.user.id]: u }); Store.setSession(data.user.id);
           ensureAudio();
           enterApp(u);
