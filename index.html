@@ -229,7 +229,7 @@ body{font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans S
 @keyframes lovePop{0%{opacity:0;transform:translate(-50%,6px) scale(.5)}25%{opacity:1;transform:translate(-50%,-2px) scale(1.12)}100%{opacity:0;transform:translate(-50%,-16px) scale(.9)}}
 ::-webkit-scrollbar{width:0;height:0}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabaseClient.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head><body>
 <div id="phone" class="phone">
   <!-- ===== 登录页 ===== -->
@@ -447,7 +447,7 @@ const yesterdayStr = () => fmtDate(new Date(Date.now() - 864e5));
 const uid = () => 'snk_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 
 /* ================= Supabase 配置 ================= */
-const SUPABASE_URL = 'https://gglspvbimmljtummctmg.supabaseClient.co';
+const SUPABASE_URL = 'https://gglspvbimmljtummctmg.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_14X6tu0U6QXDip5Hw9-04Q_GKnywJO9';
 let supabaseClient = null;
 if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
@@ -1439,7 +1439,6 @@ if (us[user]) return err('该账号已被注册');
   $('#quitBtn').addEventListener('click', () => { sfx('click'); quitToHome(); });
   $('#againBtn').addEventListener('click', () => { sfx('click'); hideModal('resultModal'); startFlow(); });
   $('#homeBtn').addEventListener('click', () => { sfx('click'); quitToHome(); });
-  bindTouch();
   bindTouch();
   (async () => { await tryAutoLogin(); })();
   tryRestoreShare();
