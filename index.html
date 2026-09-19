@@ -355,7 +355,6 @@ body{font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans S
         </div>
       </div>
       <button id="pauseBtn" class="pause-btn"><svg viewBox="0 0 24 24" width="20" height="20"><rect x="6" y="5" width="4.4" height="14" rx="2" fill="#B06B7E"/><rect x="13.6" y="5" width="4.4" height="14" rx="2" fill="#B06B7E"/></svg></button>
-      <button id="menuBtn" class="menu-btn" title="返回主菜单"><svg viewBox="0 0 24 24" width="22" height="22"><rect x="4" y="6" width="16" height="2.2" rx="1.1" fill="#B06B7E"/><rect x="4" y="11" width="16" height="2.2" rx="1.1" fill="#B06B7E"/><rect x="4" y="16" width="16" height="2.2" rx="1.1" fill="#B06B7E"/></svg></button>
     </div>
   </div>
 </div>
@@ -652,7 +651,7 @@ async function guestLogin() {
   toast('欢迎新玩家 ' + u.nick + '！已送 200 金币 🎉');
 }
 async function logout() {
-  if (isOnline && supabase) {
+  if (isOnline && supabaseClient) {
     try { await supabaseClient.auth.signOut(); } catch (e) {}
   }
   Store.setSession('');
@@ -1055,7 +1054,7 @@ function beginGame(items) {
   const u = getUser();
   if (!u) { console.error('No user logged in'); return; }
   Object.keys(items || {}).forEach(k => { if (items[k] && (u.items[k] || 0) > 0) u.items[k]--; });
-  saveUser();
+  saveUser().catch(()=>{});
   G.score = 0; G.lives = 3; G.time = 0; G.coins = 0; G.spawnAcc = 0;
   G.snacks = []; G.magnetT = 0; G.doubleOn = false; G.doubleTag = 0; G.over = false; G.paused = false;
   if (items && items.magnet) G.magnetT = 10;
@@ -1085,7 +1084,7 @@ function setTarget(cx) {
   G.catTargetX = clamp(cx - r.left, catMin(), catMax());
 }
 let catBoxEl = null;
-(function bindTouch() {
+function bindTouch() {
   catBoxEl = $('#catBox');
   const sc = $('#gameScene');
   sc.addEventListener('touchstart', e => { if (!G.running || G.paused) return; e.preventDefault(); setTarget(e.touches[0].clientX); }, { passive: false });
@@ -1094,7 +1093,7 @@ let catBoxEl = null;
   sc.addEventListener('mousedown', e => { if (!G.running || G.paused) return; mDown = true; e.preventDefault(); setTarget(e.clientX); });
   window.addEventListener('mousemove', e => { if (mDown && G.running && !G.paused) setTarget(e.clientX); });
   window.addEventListener('mouseup', () => { mDown = false; });
-})();
+}
 
 /* ================= 零食生成 / 碰撞 ================= */
 function spawnSnack() {
@@ -1123,6 +1122,8 @@ function mouthRect() {
 }
 function updateCat(dt) {
   if (!G.running || G.paused) return;
+  if (!catBoxEl) catBoxEl = $('#catBox');
+  if (!catBoxEl) return;
   const prev = G.catX;
   G.catX += (G.catTargetX - G.catX) * Math.min(1, dt * 14);
   if (Math.abs(G.catX - G.catTargetX) < 0.6) G.catX = G.catTargetX;
@@ -1147,8 +1148,8 @@ function step(dt) {
     if (G.time > 45 && Math.random() < 0.5) spawnSnack();
   }
   updateCat(dt);
-const mr = mouthRect();
-    const hitW = mr.halfW;
+  const mr = mouthRect();
+  const hitW = mr.halfW;
     for (let i = G.snacks.length - 1; i >= 0; i--) {
     const s = G.snacks[i];
     if (G.magnetT > 0 && !G.over) {
@@ -1418,7 +1419,7 @@ if (us[user]) return err('该账号已被注册');
   $('#restoreBtn').addEventListener('click', () => { sfx('click'); $('#backupFile').click(); });
   $('#backupFile').addEventListener('change', handleBackupFile);
   $('#shareBtn').addEventListener('click', copyShareLink);
-  $('#logoutBtn').addEventListener('click', () => {
+  $('#logoutBtn').addEventListener('click', async () => {
     cfmCb = logout;
     $('#cfmText').textContent = '确定退出当前账号并返回登录页吗？';
     showModal('confirmModal');
@@ -1433,12 +1434,13 @@ if (us[user]) return err('该账号已被注册');
   $('#itemGo').addEventListener('click', () => { sfx('click'); hideModal('itemModal'); beginGame(selItems); });
   $('#itemSkip').addEventListener('click', () => { sfx('click'); hideModal('itemModal'); beginGame({}); });
   $('#pauseBtn').addEventListener('click', () => { sfx('click'); pauseGame(); });
-  $('#menuBtn').addEventListener('click', () => { sfx('click'); quitToHome(); });
   $('#resumeBtn').addEventListener('click', () => { sfx('click'); resumeGame(); });
   $('#restartBtn').addEventListener('click', () => { sfx('click'); hideModal('pauseModal'); startFlow(); });
   $('#quitBtn').addEventListener('click', () => { sfx('click'); quitToHome(); });
   $('#againBtn').addEventListener('click', () => { sfx('click'); hideModal('resultModal'); startFlow(); });
   $('#homeBtn').addEventListener('click', () => { sfx('click'); quitToHome(); });
+  bindTouch();
+  bindTouch();
   (async () => { await tryAutoLogin(); })();
   tryRestoreShare();
 });</script>
