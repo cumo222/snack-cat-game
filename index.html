@@ -229,7 +229,6 @@ body{font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans S
 @keyframes lovePop{0%{opacity:0;transform:translate(-50%,6px) scale(.5)}25%{opacity:1;transform:translate(-50%,-2px) scale(1.12)}100%{opacity:0;transform:translate(-50%,-16px) scale(.9)}}
 ::-webkit-scrollbar{width:0;height:0}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 </head><body>
 <div id="phone" class="phone">
   <!-- ===== 登录页 ===== -->
@@ -447,7 +446,7 @@ const todayStr = () => fmtDate(new Date());
 const yesterdayStr = () => fmtDate(new Date(Date.now() - 864e5));
 const uid = () => 'snk_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 
-/* ================= Supabase 配置 ================= */
+/* ================= Supabase 配置（已注释，纯本地模式） =================
 const SUPABASE_URL = 'https://gglspvbimmljtummctmg.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_14X6tu0U6QXDip5Hw9-04Q_GKnywJO9';
 let supabase = null;
@@ -455,6 +454,8 @@ if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
   supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 }
 let isOnline = !!supabase;
+*/
+let isOnline = false; // 仓库模式：纯本地存储，无外部依赖
 
 /* ================= 数据存储（本地 + Supabase 云端） ================= */
 const Store = {
@@ -564,11 +565,8 @@ async function saveUser() {
   const us = Store.loadUsers();
   us[app.user.id] = app.user;
   Store.saveUsers(us);
-  if (isOnline && supabase && app.user.id) {
-    try {
-      await supabase.from('users').upsert([{ id: app.user.id, ...app.user, updated_at: new Date().toISOString() }], { onConflict: 'id' });
-    } catch (e) { console.log('Supabase save failed:', e.message); }
-  }
+  // 仓库模式：跳过云端同步
+  /* supabase upsert disabled */
 }
 
 /* ================= Toast ================= */
@@ -625,25 +623,7 @@ function enterApp(u) {
 }
 async function guestLogin() {
   ensureAudio();
-  if (isOnline && supabase) {
-    try {
-      const { data, error } = await supabase.auth.signUp({
-        email: 'guest_' + Date.now() + '@snackcat.local',
-        password: 'guest_' + Math.random().toString(36).slice(2)
-      });
-      if (error) throw error;
-      const gameData = newUser(data.user.id, '小猫' + randInt(1000, 9999), '');
-      await supabase.from('users').insert([{
-        id: data.user.id, ...gameData, created_at: new Date().toISOString()
-      }]);
-      Store.saveUsers({ [data.user.id]: gameData }); Store.setSession(data.user.id);
-      enterApp(gameData);
-      toast('欢迎新玩家 ' + gameData.nick + '！已送 200 金币 🎉');
-      return;
-    } catch (e) {
-      console.log('Supabase guest login failed:', e.message);
-    }
-  }
+  // 仓库模式：跳过云端注册，直接本地游客登录
   const id = uid();
   const u = newUser(id, '小猫' + randInt(1000, 9999), '');
   const us = Store.loadUsers(); us[id] = u;
@@ -652,9 +632,7 @@ async function guestLogin() {
   toast('欢迎新玩家 ' + u.nick + '！已送 200 金币 🎉');
 }
 async function logout() {
-  if (isOnline && supabase) {
-    try { await supabase.auth.signOut(); } catch (e) {}
-  }
+  // 仓库模式：跳过云端登出
   Store.setSession('');
   app.user = null;
   if (G.running) { G.running = false; cancelAnimationFrame(G.raf); }
@@ -893,19 +871,7 @@ function handleBackupFile(evt) {
 }
 /* 会话自动恢复：localStorage 中留有会话则直接进入游戏，无需重新登录 */
 async function tryAutoLogin() {
-  if (isOnline && supabase) {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session && session.user) {
-        const { data: profile } = await supabase.from('users').select('*').eq('id', session.user.id).single();
-        if (profile) {
-          Store.saveUsers({ [profile.id]: profile }); Store.setSession(profile.id);
-          enterApp(profile);
-          return true;
-        }
-      }
-    } catch (e) { console.log('Supabase auto login failed:', e.message); }
-  }
+  // 仓库模式：跳过云端自动登录
   const sid = Store.getSession();
   if (!sid) return false;
   const us = Store.loadUsers();
@@ -1085,7 +1051,7 @@ function setTarget(cx) {
   G.catTargetX = clamp(cx - r.left, catMin(), catMax());
 }
 let catBoxEl = null;
-(function bindTouch() {
+function bindTouch() {
   catBoxEl = $('#catBox');
   const sc = $('#gameScene');
   sc.addEventListener('touchstart', e => { if (!G.running || G.paused) return; e.preventDefault(); setTarget(e.touches[0].clientX); }, { passive: false });
@@ -1094,7 +1060,7 @@ let catBoxEl = null;
   sc.addEventListener('mousedown', e => { if (!G.running || G.paused) return; mDown = true; e.preventDefault(); setTarget(e.clientX); });
   window.addEventListener('mousemove', e => { if (mDown && G.running && !G.paused) setTarget(e.clientX); });
   window.addEventListener('mouseup', () => { mDown = false; });
-})();
+}
 
 /* ================= 零食生成 / 碰撞 ================= */
 function spawnSnack() {
@@ -1123,6 +1089,8 @@ function mouthRect() {
 }
 function updateCat(dt) {
   if (!G.running || G.paused) return;
+  if (!catBoxEl) catBoxEl = $('#catBox');
+  if (!catBoxEl) return;
   const prev = G.catX;
   G.catX += (G.catTargetX - G.catX) * Math.min(1, dt * 14);
   if (Math.abs(G.catX - G.catTargetX) < 0.6) G.catX = G.catTargetX;
@@ -1147,9 +1115,9 @@ function step(dt) {
     if (G.time > 45 && Math.random() < 0.5) spawnSnack();
   }
   updateCat(dt);
-const mr = mouthRect();
-    const hitW = mr.halfW;
-    for (let i = G.snacks.length - 1; i >= 0; i--) {
+  const mr = mouthRect();
+  const hitW = mr.halfW;
+  for (let i = G.snacks.length - 1; i >= 0; i--) {
     const s = G.snacks[i];
     if (G.magnetT > 0 && !G.over) {
       const dx = mr.cx - s.x, dy = (mr.bottom - 20) - s.y;
@@ -1290,7 +1258,7 @@ async function gameOver() {
   u.coins += G.earnedFinal;
   u.totalEarned += G.earnedFinal;
   if (G.score > u.best) u.best = G.score;
-  await saveUser();
+  saveUser().catch(()=>{});
   sfx('over');
   setTimeout(() => {
     $('#resScore').textContent = G.score;
@@ -1317,25 +1285,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const user = $('#acctUser').value.trim();
     const pass = $('#acctPass').value;
     const err = m => { $('#acctErr').textContent = m; };
-          if (isOnline && supabase) {
-        try {
-          const { data, error } = await supabase.auth.signInWithPassword({
-            email: encodeURIComponent(user) + '@snackcat.local',
-            password: pass
-          });
-          if (!error && data.user) {
-            const { data: profile } = await supabase.from('users').select('*').eq('id', data.user.id).single();
-            if (profile) {
-              Store.saveUsers({ [profile.id]: profile }); Store.setSession(profile.id);
-              ensureAudio();
-              enterApp(profile);
-              hideModal('acctModal');
-              toast('欢迎回来 ' + profile.nick + '！存档已同步 🎉');
-              return;
-            }
-          }
-        } catch (e) { console.log('Supabase login failed:', e.message); }
-      }
+      // 仓库模式：跳过云端登录验证
 if (acctMode === 'login') {
       if (!user) return err('请输入账号');
       if (!us[user]) {
@@ -1357,23 +1307,7 @@ if (acctMode === 'login') {
       if (!/^[\w\u4e00-\u9fa5]{2,16}$/.test(user)) return err('账号需2-16位，支持中文/字母/数字/下划线');
       if (pass.length < 4 || pass.length > 16) return err('密码需4-16位');
       if (pass !== $('#acctPass2').value) return err('两次输入的密码不一致');
-            if (isOnline && supabase) {
-        try {
-          const { data, error } = await supabase.auth.signUp({
-            email: encodeURIComponent(user) + '@snackcat.local',
-            password: pass
-          });
-          if (error) { console.log('Supabase register skipped:', error.message); throw error; }
-          const u = newUser(data.user.id, user, pass);
-          await supabase.from('users').insert([{ id: data.user.id, ...u, created_at: new Date().toISOString() }]);
-          Store.saveUsers({ [data.user.id]: u }); Store.setSession(data.user.id);
-          ensureAudio();
-          enterApp(u);
-          hideModal('acctModal');
-          toast('注册成功，欢迎 ' + user + '！存档已绑定账号，云端同步 🎉');
-          return;
-        } catch (e) { console.log('Supabase register failed:', e.message); }
-      }
+      // 仓库模式：跳过云端注册
 if (us[user]) return err('该账号已被注册');
       const u = newUser(user, user, pass);
       us[user] = u;
@@ -1439,6 +1373,7 @@ if (us[user]) return err('该账号已被注册');
   $('#quitBtn').addEventListener('click', () => { sfx('click'); quitToHome(); });
   $('#againBtn').addEventListener('click', () => { sfx('click'); hideModal('resultModal'); startFlow(); });
   $('#homeBtn').addEventListener('click', () => { sfx('click'); quitToHome(); });
+  bindTouch();
   (async () => { await tryAutoLogin(); })();
   tryRestoreShare();
 });</script>
