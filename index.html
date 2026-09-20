@@ -434,6 +434,7 @@ body{font-family:'PingFang SC','Hiragino Sans GB','Microsoft YaHei','Noto Sans S
 //__JS_B__
 //__JS_C__
 'use strict';
+let cfmCb = null;
 /* ================= 工具函数 ================= */
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
@@ -446,7 +447,7 @@ const todayStr = () => fmtDate(new Date());
 const yesterdayStr = () => fmtDate(new Date(Date.now() - 864e5));
 const uid = () => 'snk_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 
-/* ================= Supabase 配置（已注释，纯本地模式） =================
+/* ================= Supabase 配置（已禁用，纯本地模式） =================
 const SUPABASE_URL = 'https://gglspvbimmljtummctmg.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_14X6tu0U6QXDip5Hw9-04Q_GKnywJO9';
 let supabase = null;
@@ -455,7 +456,7 @@ if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
 }
 let isOnline = !!supabase;
 */
-let isOnline = false; // 仓库模式：纯本地存储，无外部依赖
+let isOnline = false; // 仓库模式：纯本地存储
 
 /* ================= 数据存储（本地 + Supabase 云端） ================= */
 const Store = {
@@ -566,7 +567,6 @@ async function saveUser() {
   us[app.user.id] = app.user;
   Store.saveUsers(us);
   // 仓库模式：跳过云端同步
-  /* supabase upsert disabled */
 }
 
 /* ================= Toast ================= */
@@ -623,7 +623,7 @@ function enterApp(u) {
 }
 async function guestLogin() {
   ensureAudio();
-  // 仓库模式：跳过云端注册，直接本地游客登录
+  // 仓库模式：直接本地游客登录
   const id = uid();
   const u = newUser(id, '小猫' + randInt(1000, 9999), '');
   const us = Store.loadUsers(); us[id] = u;
@@ -1206,7 +1206,8 @@ function updateHud(scoreOnly) {
   if (!scoreOnly && elLives) elLives.innerHTML = heartsHTML(G.lives);
 }
 function updateItemTag() {
-  const el = $('#itemTag');
+  const el = document.getElementById('itemTag');
+  if (!el) return;
   const on = G.magnetT > 0 || G.doubleTag > 0;
   if (G.magnetT > 0) el.textContent = '🧲 磁铁吸附中 ' + Math.ceil(G.magnetT) + 's';
   else if (G.doubleTag > 0) el.textContent = '🪙 双倍金币生效中';
@@ -1285,7 +1286,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const user = $('#acctUser').value.trim();
     const pass = $('#acctPass').value;
     const err = m => { $('#acctErr').textContent = m; };
-      // 仓库模式：跳过云端登录验证
+      // 仓库模式：跳过云端登录
 if (acctMode === 'login') {
       if (!user) return err('请输入账号');
       if (!us[user]) {
